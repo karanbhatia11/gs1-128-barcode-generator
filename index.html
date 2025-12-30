@@ -2,38 +2,56 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>GS1-128 Barcode Generator</title>
+<title>GS1-128 Barcode PDF</title>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; }
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
 
-/* INPUT UI */
+/* INPUT CONTROLS */
 .controls label { display:block; margin-top:10px; }
 .controls input { width:260px; padding:6px; }
 .controls button { margin-top:15px; padding:8px 16px; }
 
-/* LABEL */
-.label {
-  width: 100mm;
-  border: 1px solid #000;
-  padding: 10mm;
-  margin-top: 20px;
+/* A4 PAGE */
+.page {
+  width: 210mm;
+  height: 297mm;
+  padding: 20mm;
+  box-sizing: border-box;
 }
 
-.item-text {
-  font-size: 14px;
-  margin-bottom: 6px;
+/* TOP ROW */
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20mm;
 }
 
-svg { width: 100%; }
+.block {
+  width: 45%;
+  text-align: center;
+}
 
-/* PRINT / PDF */
+.value-text {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 6mm;
+}
+
+/* BARCODE */
+svg {
+  width: 100%;
+}
+
+/* PRINT RULES */
 @media print {
   .controls { display: none; }
   body { padding: 0; }
-  .label { border: none; }
 }
 </style>
 </head>
@@ -41,7 +59,7 @@ svg { width: 100%; }
 <body>
 
 <div class="controls">
-  <h2>GS1-128 Generator</h2>
+  <h2>GS1-128 Barcode Generator</h2>
 
   <label>Item No (GTIN-14)</label>
   <input id="gtin" value="09421908260067">
@@ -63,37 +81,68 @@ svg { width: 100%; }
   <button onclick="window.print()">Download PDF</button>
 </div>
 
-<!-- LABEL OUTPUT -->
-<div class="label" id="label">
-  <div class="item-text" id="itemText"></div>
-  <svg id="productBarcode"></svg>
+<!-- A4 PAGE -->
+<div class="page">
+
+  <div class="top-row">
+    <!-- ITEM BLOCK -->
+    <div class="block">
+      <div class="value-text" id="itemText"></div>
+      <svg id="itemBarcode"></svg>
+    </div>
+
+    <!-- SSCC BLOCK -->
+    <div class="block">
+      <div class="value-text" id="ssccText"></div>
+      <svg id="ssccBarcode"></svg>
+    </div>
+  </div>
+
 </div>
 
 <script>
 function generate() {
-  productBarcode.innerHTML = "";
+  itemBarcode.innerHTML = "";
+  ssccBarcode.innerHTML = "";
 
-  const gtin = document.getElementById("gtin").value;
+  const gtin = gtinInput = document.getElementById("gtin").value;
   const [dd, mm, yy] = document.getElementById("expiry").value.split(".");
   const expiry = yy + mm + dd;
   const batch = document.getElementById("batch").value;
   const qty = document.getElementById("qty").value;
+  const sscc = document.getElementById("sscc").value;
 
-  const gs1 =
+  const itemGS1 =
     "(02)" + gtin +
     "(17)" + expiry +
     "(10)" + batch +
     "(37)" + qty;
 
-  // Item number text (printed on PDF)
+  const ssccGS1 =
+    "(00)" + sscc;
+
+  // Top text
   document.getElementById("itemText").innerText =
     "Item No: " + gtin;
 
-  JsBarcode("#productBarcode", gs1, {
+  document.getElementById("ssccText").innerText =
+    "SSCC: " + sscc;
+
+  // Barcodes (bigger text under bars)
+  JsBarcode("#itemBarcode", itemGS1, {
     format: "CODE128",
-    height: 70,
+    height: 90,
     displayValue: true,
-    fontSize: 14
+    fontSize: 24,   // ⬅️ nearly double size
+    textMargin: 6
+  });
+
+  JsBarcode("#ssccBarcode", ssccGS1, {
+    format: "CODE128",
+    height: 90,
+    displayValue: true,
+    fontSize: 24,   // ⬅️ nearly double size
+    textMargin: 6
   });
 }
 </script>
