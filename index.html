@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GS1-128 Barcode Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<style>
+body{font-family:Arial;padding:20px}
+label{display:block;margin-top:10px}
+input{width:280px;padding:6px}
+button{margin-top:15px;padding:8px 16px}
+svg{margin-top:20px}
+</style>
+</head>
+<body>
+
+<h2>GS1-128 Barcode Generator</h2>
+
+<label>Item No (GTIN-14)</label>
+<input id="gtin" value="09421908260067">
+
+<label>Use By (DD.MM.YY)</label>
+<input id="expiry" value="01.05.28">
+
+<label>Batch / Lot</label>
+<input id="batch" value="055019">
+
+<label>Quantity</label>
+<input id="qty" value="40">
+
+<label>SSCC</label>
+<input id="sscc" value="012345600000001620">
+
+<br>
+<button onclick="generate()">Generate</button>
+
+<h3>Product Barcode</h3>
+<svg id="product"></svg>
+
+<h3>SSCC Barcode</h3>
+<svg id="ssccSvg"></svg>
+
+<script>
+function generate(){
+  product.innerHTML="";
+  ssccSvg.innerHTML="";
+
+  const [dd,mm,yy]=expiry.value.split(".");
+  const exp=yy+mm+dd;
+
+  const productData="(02)"+gtin.value+"(17)"+exp+"(10)"+batch.value+"(37)"+qty.value;
+  const ssccData="(00)"+sscc.value;
+
+  JsBarcode("#product",productData,{format:"CODE128",height:80,displayValue:true});
+  JsBarcode("#ssccSvg",ssccData,{format:"CODE128",height:80,displayValue:true});
+}
+</script>
+
+</body>
+</html>
