@@ -17,10 +17,10 @@ body {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
   background: #ffffff;
-  color: #111;
+  color: #1a1a1a;
 }
 
-/* UI CONTROLS */
+/* INPUT UI */
 .controls {
   padding: 20px;
 }
@@ -28,62 +28,64 @@ body {
 .controls input { width:260px; padding:6px; }
 .controls button { margin-top:15px; padding:8px 16px; }
 
-/* PAGE */
+/* PAGE CENTERING */
 .page {
-  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   height: 100%;
 }
 
-/* HEADER (Skutopia-inspired) */
+/* CONTENT BLOCK */
+.content {
+  width: 85%;
+}
+
+/* HEADER */
 .header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 8mm;
-  border-bottom: 2px solid #e6e6e6;
-  margin-bottom: 10mm;
-}
-
-.logo {
-  height: 28px;
-}
-
-/* TOP VALUES */
-.top-row {
-  display: flex;
-  justify-content: space-between;
+  justify-content: center;
   margin-bottom: 8mm;
 }
 
-.value-block {
-  width: 48%;
-  background: #f8f8f8;
-  padding: 6mm;
+.header img {
+  height: 32px;
+}
+
+/* INFO PANEL */
+.info-panel {
+  background: #f2f4f3;
+  border-left: 6px solid #2bb673; /* Skutopia green */
+  padding: 10mm;
   text-align: center;
-  border-radius: 4px;
+  margin-bottom: 12mm;
 }
 
-.value-label {
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.value-text {
-  font-size: 22px;
+.info-panel div {
+  font-size: 20px;
   font-weight: bold;
+  margin-bottom: 4mm;
 }
 
 /* BARCODE AREA */
-.barcode-row {
+.barcodes {
   display: flex;
   justify-content: space-between;
+  gap: 16mm;
 }
 
 .barcode-block {
   width: 48%;
   text-align: center;
+  background: #ffffff; /* scanner-safe */
+  padding: 6mm;
+}
+
+.barcode-heading {
+  margin-top: 6mm;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
 }
 
 svg {
@@ -123,40 +125,35 @@ svg {
 </div>
 
 <div class="page">
+  <div class="content">
 
-  <!-- HEADER -->
-  <div class="header">
-    <img
-      class="logo"
-      src="https://skutopia.com/wp-content/themes/skutopia/assets/images/logo.svg"
-      alt="Skutopia Logo"
-    />
+    <!-- LOGO -->
+    <div class="header">
+      <img src="logo.svg" alt="Skutopia Logo">
+    </div>
+
+    <!-- INFO -->
+    <div class="info-panel">
+      <div id="itemText"></div>
+      <div id="ssccText"></div>
+    </div>
+
+    <!-- BARCODES -->
+    <div class="barcodes">
+
+      <div class="barcode-block">
+        <svg id="itemBarcode"></svg>
+        <div class="barcode-heading">BARCODE 1</div>
+      </div>
+
+      <div class="barcode-block">
+        <svg id="ssccBarcode"></svg>
+        <div class="barcode-heading">BARCODE 2</div>
+      </div>
+
+    </div>
+
   </div>
-
-  <!-- VALUES -->
-  <div class="top-row">
-    <div class="value-block">
-      <div class="value-label">ITEM NUMBER</div>
-      <div class="value-text" id="itemText"></div>
-    </div>
-
-    <div class="value-block">
-      <div class="value-label">SSCC</div>
-      <div class="value-text" id="ssccText"></div>
-    </div>
-  </div>
-
-  <!-- BARCODES -->
-  <div class="barcode-row">
-    <div class="barcode-block">
-      <svg id="itemBarcode"></svg>
-    </div>
-
-    <div class="barcode-block">
-      <svg id="ssccBarcode"></svg>
-    </div>
-  </div>
-
 </div>
 
 <script>
@@ -180,8 +177,8 @@ function generate() {
   const ssccGS1 =
     "(00)" + sscc;
 
-  itemText.innerText = gtin;
-  ssccText.innerText = sscc;
+  itemText.innerText = "ITEM NUMBER: " + gtin;
+  ssccText.innerText = "SSCC: " + sscc;
 
   JsBarcode("#itemBarcode", itemGS1, {
     format: "CODE128",
