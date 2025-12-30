@@ -7,51 +7,60 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  padding: 20px;
+/* FORCE A4 LANDSCAPE */
+@page {
+  size: A4 landscape;
+  margin: 15mm;
 }
 
-/* INPUT CONTROLS */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+}
+
+/* INPUT UI */
 .controls label { display:block; margin-top:10px; }
 .controls input { width:260px; padding:6px; }
 .controls button { margin-top:15px; padding:8px 16px; }
 
-/* A4 PAGE */
+/* PAGE */
 .page {
-  width: 210mm;
-  height: 297mm;
-  padding: 20mm;
-  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
 }
 
-/* TOP ROW */
+/* TOP TEXT */
 .top-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20mm;
-}
-
-.block {
-  width: 45%;
-  text-align: center;
+  margin-bottom: 10mm;
 }
 
 .value-text {
-  font-size: 18px;
+  width: 48%;
+  text-align: center;
+  font-size: 22px;
   font-weight: bold;
-  margin-bottom: 6mm;
 }
 
-/* BARCODE */
+/* BARCODE ROW */
+.barcode-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.barcode-block {
+  width: 48%;
+  text-align: center;
+}
+
 svg {
   width: 100%;
 }
 
-/* PRINT RULES */
+/* PRINT CLEANUP */
 @media print {
   .controls { display: none; }
-  body { padding: 0; }
 }
 </style>
 </head>
@@ -81,19 +90,21 @@ svg {
   <button onclick="window.print()">Download PDF</button>
 </div>
 
-<!-- A4 PAGE -->
 <div class="page">
 
+  <!-- TOP TEXT -->
   <div class="top-row">
-    <!-- ITEM BLOCK -->
-    <div class="block">
-      <div class="value-text" id="itemText"></div>
+    <div class="value-text" id="itemText"></div>
+    <div class="value-text" id="ssccText"></div>
+  </div>
+
+  <!-- BARCODES -->
+  <div class="barcode-row">
+    <div class="barcode-block">
       <svg id="itemBarcode"></svg>
     </div>
 
-    <!-- SSCC BLOCK -->
-    <div class="block">
-      <div class="value-text" id="ssccText"></div>
+    <div class="barcode-block">
       <svg id="ssccBarcode"></svg>
     </div>
   </div>
@@ -105,7 +116,7 @@ function generate() {
   itemBarcode.innerHTML = "";
   ssccBarcode.innerHTML = "";
 
-  const gtin = gtinInput = document.getElementById("gtin").value;
+  const gtin = document.getElementById("gtin").value;
   const [dd, mm, yy] = document.getElementById("expiry").value.split(".");
   const expiry = yy + mm + dd;
   const batch = document.getElementById("batch").value;
@@ -122,37 +133,29 @@ function generate() {
     "(00)" + sscc;
 
   // Top text
-  document.getElementById("itemText").innerText =
-    "Item No: " + gtin;
+  itemText.innerText = "Item No: " + gtin;
+  ssccText.innerText = "SSCC: " + sscc;
 
-  document.getElementById("ssccText").innerText =
-    "SSCC: " + sscc;
-
-  /*// Barcodes (bigger text under bars)
+  // LARGE ITEM BARCODE (dense GS1)
   JsBarcode("#itemBarcode", itemGS1, {
     format: "CODE128",
-    height: 90,
+    width: 3.2,        // ⬅️ thick bars = fills page
+    height: 140,
     displayValue: true,
-    fontSize: 24,   // ⬅️ nearly double size
-    textMargin: 6
-  }); */
-
-  JsBarcode("#itemBarcode", itemGS1, {
-    format: "CODE128",
-    width: 2.2,        // ⬅️ more horizontal space
-    height: 100,       // ⬅️ taller bars
-    displayValue: true,
-    fontSize: 90,      // ⬅️ FORCE bigger text
+    fontSize: 30,      // ⬅️ very clear numbers
     textMargin: 10,
     margin: 0
   });
 
+  // LARGE SSCC BARCODE
   JsBarcode("#ssccBarcode", ssccGS1, {
     format: "CODE128",
-    height: 90,
+    width: 3.2,
+    height: 140,
     displayValue: true,
-    fontSize: 24,   // ⬅️ nearly double size
-    textMargin: 6
+    fontSize: 30,
+    textMargin: 10,
+    margin: 0
   });
 }
 </script>
