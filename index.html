@@ -16,21 +16,22 @@
       padding: 20px;
     }
 
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
     .logo {
       text-align: center;
       font-size: 32px;
       font-weight: 800;
       letter-spacing: 2px;
+      margin-bottom: 20px;
     }
 
     .logo span {
       border-bottom: 4px solid #ff4fd8;
       padding-bottom: 4px;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: auto;
     }
 
     .toggle {
@@ -76,6 +77,18 @@
     .download.enabled {
       opacity: 1;
     }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .toggle,
+      .panel,
+      h2,
+      .download {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -111,73 +124,96 @@
   <div class="preview" id="preview"></div>
 
   <button id="downloadBtn" class="download" disabled onclick="window.print()">
-  Download PDF
+    Download PDF
   </button>
-
 
 </div>
 
 <script>
-  const { jsPDF } = window.jspdf;
-  let records = [];
+let records = [];
 
-  function showPanel(id) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ===== MANUAL ===== */
+function generateManual() {
+  records = [{
+    itemNumber: itemNumber.value,
+    useBy: useBy.value,
+    batch: batch.value,
+    quantity: quantity.value,
+    sscc: sscc.value
+  }];
+  renderPreview();
+}
+
+/* ===== EXCEL ===== */
+function generateFromExcel() {
+  const file = excelFile.files[0];
+  if (!file) {
+    alert("Upload Excel file");
+    return;
   }
 
-  function generateManual() {
-    records = [{
-      itemNumber: itemNumber.value,
-      useBy: useBy.value,
-      batch: batch.value,
-      quantity: quantity.value,
-      sscc: sscc.value
-    }];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, { type: "binary" });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    if (!rows.length) {
+      alert("Excel file is empty");
+      return;
+    }
+    records = rows;
     renderPreview();
-  }
+  };
+  reader.readAsBinaryString(file);
+}
 
-  function generateFromExcel() {
-    const file = excelFile.files[0];
-    if (!file) return alert("Upload Excel file");
+/* ===== PREVIEW + PRINT SOURCE ===== */
+function renderPreview() {
+  const preview = document.getElementById("preview");
+  preview.innerHTML = "";
 
-    const reader = new FileReader();
-    reader.onload = e => {
-      const wb = XLSX.read(e.target.result, { type: "binary" });
-      const sheet = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-      records = sheet;
-      renderPreview();
-    };
-    reader.readAsBinaryString(file);
-  }
+  records.forEach((r, i) => {
+    const gs1 =
+      `(02)${r.itemNumber}` +
+      `(17)${r.useBy.replaceAll('.', '')}` +
+      `(10)${r.batch}` +
+      `(37)${r.quantity}`;
 
-  function renderPreview() {
-    const preview = document.getElementById("preview");
-    preview.innerHTML = "";
+    const ssccText = `(00)${r.sscc}`;
 
-    records.forEach((r, i) => {
-      const gs1 = `(02)${r.itemNumber}(17)${r.useBy.replaceAll('.', '')}(10)${r.batch}(37)${r.quantity}`;
-      const ssccText = `(00)${r.sscc}`;
+    const div = document.createElement("div");
+    div.className = "barcode-block";
 
-      const div = document.createElement("div");
-      div.className = "barcode-block";
+    div.innerHTML = `
+      <svg id="gs1-${i}"></svg>
+      <svg id="sscc-${i}"></svg>
+    `;
 
-      div.innerHTML = `
-        <svg id="gs1-${i}"></svg>
-        <svg id="sscc-${i}"></svg>
-      `;
-      preview.appendChild(div);
+    preview.appendChild(div);
 
-      JsBarcode(`#gs1-${i}`, gs1, { format: "CODE128", width: 2, height: 80 });
-      JsBarcode(`#sscc-${i}`, ssccText, { format: "CODE128", width: 2, height: 80 });
+    JsBarcode(`#gs1-${i}`, gs1, {
+      format: "CODE128",
+      width: 2,
+      height: 80,
+      displayValue: true
     });
 
-    document.getElementById("downloadBtn").disabled = false;
-    document.getElementById("downloadBtn").classList.add("enabled");
-  }
+    JsBarcode(`#sscc-${i}`, ssccText, {
+      format: "CODE128",
+      width: 2,
+      height: 80,
+      displayValue: true
+    });
+  });
 
-    pdf.save("gs1-barcodes.pdf");
-  }
+  const btn = document.getElementById("downloadBtn");
+  btn.disabled = false;
+  btn.classList.add("enabled");
+}
 </script>
 
 </body>
