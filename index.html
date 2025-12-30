@@ -5,9 +5,9 @@
 <title></title>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
 
 <style>
-/* ===== PRINT ===== */
 @page {
   size: A4 landscape;
   margin: 0;
@@ -16,75 +16,72 @@
 body {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
-  background: #ffffff;
-  color: #111;
+  background: #fff;
 }
 
-/* ===== TOOL UI ===== */
+/* TOOL */
 .controls {
   padding: 20px;
+  border-bottom: 1px solid #ddd;
 }
-.controls label { display:block; margin-top:10px; }
-.controls input { width:260px; padding:6px; }
-.controls button { margin-top:15px; padding:8px 16px; }
+.controls h3 {
+  margin-top: 20px;
+}
+.controls label {
+  display: block;
+  margin-top: 8px;
+}
+.controls input, .controls button {
+  margin-top: 6px;
+}
 
 @media print {
   .controls { display: none; }
 }
 
-/* ===== PAGE ===== */
+/* PAGE */
 .page {
   width: 100vw;
   height: 100vh;
+  page-break-after: always;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* ===== CANVAS ===== */
 .canvas {
   width: 88%;
 }
 
-/* ===== HEADER ===== */
+/* HEADER */
 .header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: center;
   margin-bottom: 10mm;
 }
-
-/* left spacer keeps logo truly centered */
-.header .spacer {
-  height: 1px;
-}
-
 .header img {
   height: 32px;
 }
 
-/* ===== META (TOP LEFT) ===== */
+/* META */
 .meta {
   margin-bottom: 12mm;
 }
-
 .meta div {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 3mm;
 }
 
-/* ===== BARCODES (STACKED) ===== */
+/* BARCODE */
 .barcode-section {
-  margin-bottom: 16mm;
+  margin-bottom: 14mm;
 }
-
 .barcode-title {
   font-size: 16px;
   font-weight: 700;
   margin-bottom: 4mm;
 }
-
 svg {
   width: 100%;
 }
@@ -93,105 +90,132 @@ svg {
 
 <body>
 
-<!-- ===== TOOL ===== -->
+<!-- CONTROLS -->
 <div class="controls">
-  <h2>GS1-128 Barcode Generator</h2>
 
-  <label>Item No (GTIN-14)</label>
-  <input id="gtin" value="09421908260067">
+  <h2>GS1-128 Barcode PDF Generator</h2>
+
+  <!-- MANUAL -->
+  <h3>Manual Entry</h3>
+
+  <label>Item No</label>
+  <input id="m_gtin" value="09421908260067">
 
   <label>Use By (DD.MM.YY)</label>
-  <input id="expiry" value="01.05.28">
+  <input id="m_expiry" value="01.05.28">
 
-  <label>Batch / Lot</label>
-  <input id="batch" value="055019">
+  <label>Batch</label>
+  <input id="m_batch" value="055019">
 
   <label>Quantity</label>
-  <input id="qty" value="40">
+  <input id="m_qty" value="40">
 
   <label>SSCC</label>
-  <input id="sscc" value="012345600000001620">
+  <input id="m_sscc" value="012345600000001620">
 
   <br>
-  <button onclick="generate()">Generate</button>
+  <button onclick="generateManual()">Generate (Manual)</button>
+
+  <!-- EXCEL -->
+  <h3>Upload Excel</h3>
+
+  <input type="file" id="excelFile" accept=".xlsx">
+  <br>
+  <button onclick="generateFromExcel()">Generate from Excel</button>
+
+  <br><br>
   <button onclick="window.print()">Download PDF</button>
+
 </div>
 
-<!-- ===== PDF ===== -->
-<div class="page">
-  <div class="canvas">
-
-    <!-- HEADER -->
-    <div class="header">
-      <div class="spacer"></div>
-      <img src="logo.svg" alt="Skutopia Logo">
-      <div class="spacer"></div>
-    </div>
-
-    <!-- META (TOP LEFT) -->
-    <div class="meta">
-      <div id="itemText"></div>
-      <div id="ssccText"></div>
-    </div>
-
-    <!-- BARCODE 1 -->
-    <div class="barcode-section">
-      <div class="barcode-title">BARCODE 1</div>
-      <svg id="itemBarcode"></svg>
-    </div>
-
-    <!-- BARCODE 2 -->
-    <div class="barcode-section">
-      <div class="barcode-title">BARCODE 2</div>
-      <svg id="ssccBarcode"></svg>
-    </div>
-
-  </div>
-</div>
+<!-- OUTPUT -->
+<div id="output"></div>
 
 <script>
-function generate() {
-  itemBarcode.innerHTML = "";
-  ssccBarcode.innerHTML = "";
+function clearOutput() {
+  document.getElementById("output").innerHTML = "";
+}
 
-  const gtin = document.getElementById("gtin").value;
-  const [dd, mm, yy] = document.getElementById("expiry").value.split(".");
+/* ===== MANUAL MODE ===== */
+function generateManual() {
+  clearOutput();
+
+  createPage({
+    ItemNumber: m_gtin.value,
+    Expiry: m_expiry.value,
+    Batch: m_batch.value,
+    Quantity: m_qty.value,
+    SSCC: m_sscc.value
+  });
+}
+
+/* ===== EXCEL MODE ===== */
+function generateFromExcel() {
+  const file = excelFile.files[0];
+  if (!file) return alert("Upload Excel first");
+
+  clearOutput();
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, { type: "binary" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+    rows.forEach(createPage);
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* ===== PAGE CREATOR ===== */
+function createPage(row) {
+  const page = document.createElement("div");
+  page.className = "page";
+
+  page.innerHTML = `
+    <div class="canvas">
+
+      <div class="header">
+        <div></div>
+        <img src="logo.svg">
+        <div></div>
+      </div>
+
+      <div class="meta">
+        <div>ITEM NUMBER: ${row.ItemNumber}</div>
+        <div>SSCC: ${row.SSCC}</div>
+      </div>
+
+      <div class="barcode-section">
+        <div class="barcode-title">BARCODE 1</div>
+        <svg></svg>
+      </div>
+
+      <div class="barcode-section">
+        <div class="barcode-title">BARCODE 2</div>
+        <svg></svg>
+      </div>
+
+    </div>
+  `;
+
+  output.appendChild(page);
+
+  const svgs = page.querySelectorAll("svg");
+  const [dd, mm, yy] = row.Expiry.split(".");
   const expiry = yy + mm + dd;
-  const batch = document.getElementById("batch").value;
-  const qty = document.getElementById("qty").value;
-  const sscc = document.getElementById("sscc").value;
 
-  const itemGS1 =
-    "(02)" + gtin +
+  JsBarcode(svgs[0],
+    "(02)" + row.ItemNumber +
     "(17)" + expiry +
-    "(10)" + batch +
-    "(37)" + qty;
+    "(10)" + row.Batch +
+    "(37)" + row.Quantity,
+    { format: "CODE128", width: 2.8, height: 120, displayValue: true, fontSize: 26 }
+  );
 
-  const ssccGS1 =
-    "(00)" + sscc;
-
-  itemText.innerText = "ITEM NUMBER: " + gtin;
-  ssccText.innerText = "SSCC: " + sscc;
-
-  JsBarcode("#itemBarcode", itemGS1, {
-    format: "CODE128",
-    width: 2.8,
-    height: 120,
-    displayValue: true,
-    fontSize: 26,
-    textMargin: 8,
-    margin: 0
-  });
-
-  JsBarcode("#ssccBarcode", ssccGS1, {
-    format: "CODE128",
-    width: 2.8,
-    height: 120,
-    displayValue: true,
-    fontSize: 26,
-    textMargin: 8,
-    margin: 0
-  });
+  JsBarcode(svgs[1],
+    "(00)" + row.SSCC,
+    { format: "CODE128", width: 2.8, height: 120, displayValue: true, fontSize: 26 }
+  );
 }
 </script>
 
