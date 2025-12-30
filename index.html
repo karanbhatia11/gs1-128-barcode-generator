@@ -6,7 +6,6 @@
 
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <style>
@@ -111,7 +110,10 @@
   <!-- PREVIEW -->
   <div class="preview" id="preview"></div>
 
-  <button id="downloadBtn" class="download" disabled onclick="downloadPDF()">Download PDF</button>
+  <button id="downloadBtn" class="download" disabled onclick="window.print()">
+  Download PDF
+  </button>
+
 
 </div>
 
@@ -173,26 +175,6 @@
     document.getElementById("downloadBtn").disabled = false;
     document.getElementById("downloadBtn").classList.add("enabled");
   }
-
-  function downloadPDF() {
-    const pdf = new jsPDF("landscape", "pt", "a4");
-
-    records.forEach((r, i) => {
-      if (i > 0) pdf.addPage();
-
-      pdf.setFontSize(12);
-      pdf.text(`ITEM NUMBER: ${r.itemNumber}`, 40, 50);
-      pdf.text(`SSCC: ${r.sscc}`, 40, 70);
-
-      pdf.setFontSize(20);
-      pdf.text("SKUTOPIA", 420, 50, { align: "center" });
-
-      const gs1 = document.getElementById(`gs1-${i}`).outerHTML;
-      const sscc = document.getElementById(`sscc-${i}`).outerHTML;
-
-      pdf.svg(gs1, { x: 100, y: 120, width: 600 });
-      pdf.svg(sscc, { x: 220, y: 260, width: 360 });
-    });
 
     pdf.save("gs1-barcodes.pdf");
   }
