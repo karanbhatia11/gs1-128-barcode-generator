@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title></title>
 
+<!-- Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
 
@@ -19,27 +20,56 @@ body {
   background: #fff;
 }
 
-/* TOOL */
+/* ===== APP LAYOUT ===== */
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* LEFT PANEL */
 .controls {
+  width: 320px;
   padding: 20px;
-  border-bottom: 1px solid #ddd;
+  border-right: 1px solid #ddd;
 }
-.controls h3 {
-  margin-top: 20px;
+
+.controls h2 {
+  margin-top: 0;
 }
+
 .controls label {
   display: block;
-  margin-top: 8px;
+  margin-top: 10px;
 }
-.controls input, .controls button {
+
+.controls input,
+.controls button {
+  width: 100%;
   margin-top: 6px;
+  padding: 6px;
 }
 
+.controls button {
+  cursor: pointer;
+}
+
+.controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* RIGHT PANEL (EMPTY ON PURPOSE) */
+.preview {
+  flex: 1;
+  background: #fafafa;
+}
+
+/* PRINT */
 @media print {
-  .controls { display: none; }
+  .app { display: none; }
 }
 
-/* PAGE */
+/* ===== HIDDEN PDF OUTPUT ===== */
 .page {
   width: 100vw;
   height: 100vh;
@@ -53,35 +83,36 @@ body {
   width: 88%;
 }
 
-/* HEADER */
 .header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   margin-bottom: 10mm;
 }
+
 .header img {
   height: 32px;
 }
 
-/* META */
 .meta {
   margin-bottom: 12mm;
 }
+
 .meta div {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 3mm;
 }
 
-/* BARCODE */
 .barcode-section {
   margin-bottom: 14mm;
 }
+
 .barcode-title {
   font-size: 16px;
   font-weight: 700;
   margin-bottom: 4mm;
 }
+
 svg {
   width: 100%;
 }
@@ -90,53 +121,57 @@ svg {
 
 <body>
 
-<!-- CONTROLS -->
-<div class="controls">
+<!-- APP UI -->
+<div class="app">
 
-  <h2>GS1-128 Barcode PDF Generator</h2>
+  <div class="controls">
+    <h2>GS1-128 Barcode PDF Generator</h2>
 
-  <!-- MANUAL -->
-  <h3>Manual Entry</h3>
+    <h3>Manual Entry</h3>
 
-  <label>Item No</label>
-  <input id="m_gtin" value="09421908260067">
+    <label>Item Number</label>
+    <input id="m_gtin" value="09421908260067">
 
-  <label>Use By (DD.MM.YY)</label>
-  <input id="m_expiry" value="01.05.28">
+    <label>Use By (DD.MM.YY)</label>
+    <input id="m_expiry" value="01.05.28">
 
-  <label>Batch</label>
-  <input id="m_batch" value="055019">
+    <label>Batch</label>
+    <input id="m_batch" value="055019">
 
-  <label>Quantity</label>
-  <input id="m_qty" value="40">
+    <label>Quantity</label>
+    <input id="m_qty" value="40">
 
-  <label>SSCC</label>
-  <input id="m_sscc" value="012345600000001620">
+    <label>SSCC</label>
+    <input id="m_sscc" value="012345600000001620">
 
-  <br>
-  <button onclick="generateManual()">Generate (Manual)</button>
+    <button onclick="generateManual()">Generate (Manual)</button>
 
-  <!-- EXCEL -->
-  <h3>Upload Excel</h3>
+    <h3>Upload Excel</h3>
 
-  <input type="file" id="excelFile" accept=".xlsx">
-  <br>
-  <button onclick="generateFromExcel()">Generate from Excel</button>
+    <input type="file" id="excelFile" accept=".xlsx">
+    <button onclick="generateFromExcel()">Generate from Excel</button>
 
-  <br><br>
-  <button onclick="window.print()">Download PDF</button>
+    <br><br>
+    <button id="downloadBtn" onclick="window.print()" disabled>
+      Download PDF
+    </button>
+  </div>
 
+  <div class="preview"></div>
 </div>
 
-<!-- OUTPUT -->
-<div id="output"></div>
+<!-- HIDDEN PDF CONTENT -->
+<div id="output" style="display:none;"></div>
 
 <script>
+const downloadBtn = document.getElementById("downloadBtn");
+
 function clearOutput() {
   document.getElementById("output").innerHTML = "";
+  downloadBtn.disabled = true;
 }
 
-/* ===== MANUAL MODE ===== */
+/* ===== MANUAL ===== */
 function generateManual() {
   clearOutput();
 
@@ -147,12 +182,17 @@ function generateManual() {
     Quantity: m_qty.value,
     SSCC: m_sscc.value
   });
+
+  downloadBtn.disabled = false;
 }
 
-/* ===== EXCEL MODE ===== */
+/* ===== EXCEL ===== */
 function generateFromExcel() {
   const file = excelFile.files[0];
-  if (!file) return alert("Upload Excel first");
+  if (!file) {
+    alert("Please upload an Excel file first");
+    return;
+  }
 
   clearOutput();
 
@@ -161,12 +201,20 @@ function generateFromExcel() {
     const wb = XLSX.read(e.target.result, { type: "binary" });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet);
+
+    if (rows.length === 0) {
+      alert("Excel file is empty");
+      return;
+    }
+
     rows.forEach(createPage);
+    downloadBtn.disabled = false;
   };
+
   reader.readAsBinaryString(file);
 }
 
-/* ===== PAGE CREATOR ===== */
+/* ===== PAGE BUILDER ===== */
 function createPage(row) {
   const page = document.createElement("div");
   page.className = "page";
