@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title></title> <!-- empty to avoid print title -->
+<title></title>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
 <style>
-/* ===== PRINT SETUP ===== */
+/* ===== PRINT ===== */
 @page {
   size: A4 landscape;
   margin: 0;
@@ -20,7 +20,7 @@ body {
   color: #111;
 }
 
-/* ===== INPUT UI (HIDDEN IN PDF) ===== */
+/* ===== TOOL UI ===== */
 .controls {
   padding: 20px;
 }
@@ -41,49 +41,48 @@ body {
   align-items: center;
 }
 
-/* ===== CONTENT ===== */
+/* ===== CANVAS ===== */
 .canvas {
-  width: 80%;
-  text-align: center;
+  width: 88%;
 }
 
-/* ===== LOGO ===== */
+/* ===== HEADER ===== */
 .header {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 12mm;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 10mm;
+}
+
+/* left spacer keeps logo truly centered */
+.header .spacer {
+  height: 1px;
 }
 
 .header img {
-  height: 34px;
+  height: 32px;
 }
 
-/* ===== META TEXT ===== */
+/* ===== META (TOP LEFT) ===== */
 .meta {
-  margin-bottom: 16mm;
+  margin-bottom: 12mm;
 }
 
 .meta div {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  margin-bottom: 5mm;
+  margin-bottom: 3mm;
 }
 
-/* ===== BARCODE AREA ===== */
-.barcodes {
-  display: flex;
-  justify-content: space-between;
-  gap: 20mm;
-}
-
-.barcode-block {
-  width: 48%;
+/* ===== BARCODES (STACKED) ===== */
+.barcode-section {
+  margin-bottom: 16mm;
 }
 
 .barcode-title {
-  margin-top: 6mm;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
+  margin-bottom: 4mm;
 }
 
 svg {
@@ -94,7 +93,7 @@ svg {
 
 <body>
 
-<!-- UI CONTROLS -->
+<!-- ===== TOOL ===== -->
 <div class="controls">
   <h2>GS1-128 Barcode Generator</h2>
 
@@ -118,34 +117,33 @@ svg {
   <button onclick="window.print()">Download PDF</button>
 </div>
 
-<!-- PDF PAGE -->
+<!-- ===== PDF ===== -->
 <div class="page">
   <div class="canvas">
 
-    <!-- LOGO -->
+    <!-- HEADER -->
     <div class="header">
+      <div class="spacer"></div>
       <img src="logo.svg" alt="Skutopia Logo">
+      <div class="spacer"></div>
     </div>
 
-    <!-- META -->
+    <!-- META (TOP LEFT) -->
     <div class="meta">
       <div id="itemText"></div>
       <div id="ssccText"></div>
     </div>
 
-    <!-- BARCODES -->
-    <div class="barcodes">
+    <!-- BARCODE 1 -->
+    <div class="barcode-section">
+      <div class="barcode-title">BARCODE 1</div>
+      <svg id="itemBarcode"></svg>
+    </div>
 
-      <div class="barcode-block">
-        <svg id="itemBarcode"></svg>
-        <div class="barcode-title">BARCODE 1</div>
-      </div>
-
-      <div class="barcode-block">
-        <svg id="ssccBarcode"></svg>
-        <div class="barcode-title">BARCODE 2</div>
-      </div>
-
+    <!-- BARCODE 2 -->
+    <div class="barcode-section">
+      <div class="barcode-title">BARCODE 2</div>
+      <svg id="ssccBarcode"></svg>
     </div>
 
   </div>
@@ -177,21 +175,21 @@ function generate() {
 
   JsBarcode("#itemBarcode", itemGS1, {
     format: "CODE128",
-    width: 3.2,
-    height: 150,
+    width: 2.8,
+    height: 120,
     displayValue: true,
-    fontSize: 30,
-    textMargin: 10,
+    fontSize: 26,
+    textMargin: 8,
     margin: 0
   });
 
   JsBarcode("#ssccBarcode", ssccGS1, {
     format: "CODE128",
-    width: 3.2,
-    height: 150,
+    width: 2.8,
+    height: 120,
     displayValue: true,
-    fontSize: 30,
-    textMargin: 10,
+    fontSize: 26,
+    textMargin: 8,
     margin: 0
   });
 }
