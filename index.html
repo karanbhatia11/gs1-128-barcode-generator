@@ -7,20 +7,20 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
 <style>
-/* A4 LANDSCAPE */
+/* ===== PRINT SETUP ===== */
 @page {
   size: A4 landscape;
-  margin: 15mm;
+  margin: 18mm;
 }
 
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Inter, Arial, Helvetica, sans-serif;
   background: #ffffff;
-  color: #1a1a1a;
+  color: #111;
 }
 
-/* INPUT UI */
+/* ===== INPUT UI (HIDDEN IN PDF) ===== */
 .controls {
   padding: 20px;
 }
@@ -28,79 +28,76 @@ body {
 .controls input { width:260px; padding:6px; }
 .controls button { margin-top:15px; padding:8px 16px; }
 
-/* PAGE CENTERING */
+@media print {
+  .controls { display: none; }
+}
+
+/* ===== PAGE CENTERING ===== */
 .page {
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
 }
 
-/* CONTENT BLOCK */
-.content {
-  width: 85%;
+/* ===== LABEL CANVAS ===== */
+.canvas {
+  width: 100%;
+  max-width: 260mm; /* optical centering */
 }
 
-/* HEADER */
+/* ===== HEADER ===== */
 .header {
   display: flex;
   justify-content: center;
-  margin-bottom: 8mm;
+  margin-bottom: 10mm;
 }
 
 .header img {
-  height: 32px;
+  height: 34px;
 }
 
-/* INFO PANEL */
-.info-panel {
-  background: #f2f4f3;
-  border-left: 6px solid #2bb673; /* Skutopia green */
-  padding: 10mm;
-  text-align: center;
+/* ===== META INFO ===== */
+.meta {
+  border-left: 6px solid #7a1c64; /* Skutopia pink */
+  padding: 6mm 8mm;
   margin-bottom: 12mm;
 }
 
-.info-panel div {
+.meta div {
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 700;
+  margin-bottom: 3mm;
+}
+
+/* ===== BARCODE BLOCKS ===== */
+.barcode-section {
+  margin-bottom: 16mm;
+}
+
+.barcode-title {
+  font-size: 18px;
+  font-weight: 700;
   margin-bottom: 4mm;
+  color: #333;
 }
 
-/* BARCODE AREA */
-.barcodes {
-  display: flex;
-  justify-content: space-between;
-  gap: 16mm;
-}
-
-.barcode-block {
-  width: 48%;
-  text-align: center;
+.barcode-box {
   background: #ffffff; /* scanner-safe */
   padding: 6mm;
-}
-
-.barcode-heading {
-  margin-top: 6mm;
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
+  border: 1px solid #e6e6e6;
 }
 
 svg {
   width: 100%;
-}
-
-/* PRINT CLEAN */
-@media print {
-  .controls { display: none; }
 }
 </style>
 </head>
 
 <body>
 
+<!-- ===== INPUT CONTROLS ===== -->
 <div class="controls">
   <h2>GS1-128 Barcode Generator</h2>
 
@@ -124,33 +121,35 @@ svg {
   <button onclick="window.print()">Download PDF</button>
 </div>
 
+<!-- ===== PDF PAGE ===== -->
 <div class="page">
-  <div class="content">
+  <div class="canvas">
 
     <!-- LOGO -->
     <div class="header">
       <img src="logo.svg" alt="Skutopia Logo">
     </div>
 
-    <!-- INFO -->
-    <div class="info-panel">
+    <!-- META INFO -->
+    <div class="meta">
       <div id="itemText"></div>
       <div id="ssccText"></div>
     </div>
 
-    <!-- BARCODES -->
-    <div class="barcodes">
-
-      <div class="barcode-block">
+    <!-- BARCODE 1 -->
+    <div class="barcode-section">
+      <div class="barcode-title">Barcode 1</div>
+      <div class="barcode-box">
         <svg id="itemBarcode"></svg>
-        <div class="barcode-heading">BARCODE 1</div>
       </div>
+    </div>
 
-      <div class="barcode-block">
+    <!-- BARCODE 2 -->
+    <div class="barcode-section">
+      <div class="barcode-title">Barcode 2</div>
+      <div class="barcode-box">
         <svg id="ssccBarcode"></svg>
-        <div class="barcode-heading">BARCODE 2</div>
       </div>
-
     </div>
 
   </div>
@@ -177,15 +176,15 @@ function generate() {
   const ssccGS1 =
     "(00)" + sscc;
 
-  itemText.innerText = "ITEM NUMBER: " + gtin;
-  ssccText.innerText = "SSCC: " + sscc;
+  itemText.innerText = "Item Number · " + gtin;
+  ssccText.innerText = "SSCC · " + sscc;
 
   JsBarcode("#itemBarcode", itemGS1, {
     format: "CODE128",
     width: 3.2,
-    height: 140,
+    height: 150,
     displayValue: true,
-    fontSize: 30,
+    fontSize: 32,
     textMargin: 10,
     margin: 0
   });
@@ -193,9 +192,9 @@ function generate() {
   JsBarcode("#ssccBarcode", ssccGS1, {
     format: "CODE128",
     width: 3.2,
-    height: 140,
+    height: 150,
     displayValue: true,
-    fontSize: 30,
+    fontSize: 32,
     textMargin: 10,
     margin: 0
   });
