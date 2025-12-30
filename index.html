@@ -1,218 +1,197 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>GS1-128 Barcode PDF Generator</title>
+<meta charset="UTF-8">
+<title></title>
 
-  <!-- Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #ffffff;
-      margin: 0;
-      padding: 20px;
-    }
+<style>
+/* ===== PRINT ===== */
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
 
-    .container {
-      max-width: 900px;
-      margin: auto;
-    }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: #111;
+}
 
-    .logo {
-      text-align: center;
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      margin-bottom: 20px;
-    }
+/* ===== TOOL UI ===== */
+.controls {
+  padding: 20px;
+}
+.controls label { display:block; margin-top:10px; }
+.controls input { width:260px; padding:6px; }
+.controls button { margin-top:15px; padding:8px 16px; }
 
-    .logo span {
-      border-bottom: 4px solid #ff4fd8;
-      padding-bottom: 4px;
-    }
+@media print {
+  .controls { display: none; }
+}
 
-    .toggle {
-      display: flex;
-      gap: 10px;
-      margin: 20px 0;
-    }
+/* ===== PAGE ===== */
+.page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    button {
-      padding: 10px 16px;
-      cursor: pointer;
-    }
+/* ===== CANVAS ===== */
+.canvas {
+  width: 88%;
+}
 
-    .panel {
-      display: none;
-      margin-bottom: 20px;
-    }
+/* ===== HEADER ===== */
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 10mm;
+}
 
-    .panel.active {
-      display: block;
-    }
+/* left spacer keeps logo truly centered */
+.header .spacer {
+  height: 1px;
+}
 
-    input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-    }
+.header img {
+  height: 32px;
+}
 
-    .preview {
-      margin-top: 30px;
-      text-align: center;
-    }
+/* ===== META (TOP LEFT) ===== */
+.meta {
+  margin-bottom: 12mm;
+}
 
-    .barcode-block {
-      margin: 30px 0;
-    }
+.meta div {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 3mm;
+}
 
-    .download {
-      margin-top: 20px;
-      opacity: 0.4;
-    }
+/* ===== BARCODES (STACKED) ===== */
+.barcode-section {
+  margin-bottom: 16mm;
+}
 
-    .download.enabled {
-      opacity: 1;
-    }
+.barcode-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4mm;
+}
 
-    @media print {
-      body {
-        padding: 0;
-      }
-      .toggle,
-      .panel,
-      h2,
-      .download {
-        display: none;
-      }
-    }
-  </style>
+svg {
+  width: 100%;
+}
+</style>
 </head>
+
 <body>
 
-<div class="container">
+<!-- ===== TOOL ===== -->
+<div class="controls">
+  <h2>GS1-128 Barcode Generator</h2>
 
-  <div class="logo"><span>SKUTOPIA</span></div>
+  <label>Item No (GTIN-14)</label>
+  <input id="gtin" value="09421908260067">
 
-  <h2>GS1-128 Barcode PDF Generator</h2>
+  <label>Use By (DD.MM.YY)</label>
+  <input id="expiry" value="01.05.28">
 
-  <div class="toggle">
-    <button onclick="showPanel('manual')">Manual Entry</button>
-    <button onclick="showPanel('excel')">Upload Excel</button>
+  <label>Batch / Lot</label>
+  <input id="batch" value="055019">
+
+  <label>Quantity</label>
+  <input id="qty" value="40">
+
+  <label>SSCC</label>
+  <input id="sscc" value="012345600000001620">
+
+  <br>
+  <button onclick="generate()">Generate</button>
+  <button onclick="window.print()">Download PDF</button>
+</div>
+
+<!-- ===== PDF ===== -->
+<div class="page">
+  <div class="canvas">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="spacer"></div>
+      <img src="logo.svg" alt="Skutopia Logo">
+      <div class="spacer"></div>
+    </div>
+
+    <!-- META (TOP LEFT) -->
+    <div class="meta">
+      <div id="itemText"></div>
+      <div id="ssccText"></div>
+    </div>
+
+    <!-- BARCODE 1 -->
+    <div class="barcode-section">
+      <div class="barcode-title">BARCODE 1</div>
+      <svg id="itemBarcode"></svg>
+    </div>
+
+    <!-- BARCODE 2 -->
+    <div class="barcode-section">
+      <div class="barcode-title">BARCODE 2</div>
+      <svg id="ssccBarcode"></svg>
+    </div>
+
   </div>
-
-  <!-- MANUAL -->
-  <div id="manual" class="panel active">
-    <input id="itemNumber" placeholder="Item Number">
-    <input id="useBy" placeholder="Use By (DD.MM.YY)">
-    <input id="batch" placeholder="Batch">
-    <input id="quantity" placeholder="Quantity">
-    <input id="sscc" placeholder="SSCC">
-    <button onclick="generateManual()">Generate</button>
-  </div>
-
-  <!-- EXCEL -->
-  <div id="excel" class="panel">
-    <input type="file" id="excelFile" accept=".xlsx">
-    <button onclick="generateFromExcel()">Generate</button>
-  </div>
-
-  <!-- PREVIEW -->
-  <div class="preview" id="preview"></div>
-
-  <button id="downloadBtn" class="download" disabled onclick="window.print()">
-    Download PDF
-  </button>
-
 </div>
 
 <script>
-let records = [];
+function generate() {
+  itemBarcode.innerHTML = "";
+  ssccBarcode.innerHTML = "";
 
-function showPanel(id) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+  const gtin = document.getElementById("gtin").value;
+  const [dd, mm, yy] = document.getElementById("expiry").value.split(".");
+  const expiry = yy + mm + dd;
+  const batch = document.getElementById("batch").value;
+  const qty = document.getElementById("qty").value;
+  const sscc = document.getElementById("sscc").value;
 
-/* ===== MANUAL ===== */
-function generateManual() {
-  records = [{
-    itemNumber: itemNumber.value,
-    useBy: useBy.value,
-    batch: batch.value,
-    quantity: quantity.value,
-    sscc: sscc.value
-  }];
-  renderPreview();
-}
+  const itemGS1 =
+    "(02)" + gtin +
+    "(17)" + expiry +
+    "(10)" + batch +
+    "(37)" + qty;
 
-/* ===== EXCEL ===== */
-function generateFromExcel() {
-  const file = excelFile.files[0];
-  if (!file) {
-    alert("Upload Excel file");
-    return;
-  }
+  const ssccGS1 =
+    "(00)" + sscc;
 
-  const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result, { type: "binary" });
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-    if (!rows.length) {
-      alert("Excel file is empty");
-      return;
-    }
-    records = rows;
-    renderPreview();
-  };
-  reader.readAsBinaryString(file);
-}
+  itemText.innerText = "ITEM NUMBER: " + gtin;
+  ssccText.innerText = "SSCC: " + sscc;
 
-/* ===== PREVIEW + PRINT SOURCE ===== */
-function renderPreview() {
-  const preview = document.getElementById("preview");
-  preview.innerHTML = "";
-
-  records.forEach((r, i) => {
-    const gs1 =
-      `(02)${r.itemNumber}` +
-      `(17)${r.useBy.replaceAll('.', '')}` +
-      `(10)${r.batch}` +
-      `(37)${r.quantity}`;
-
-    const ssccText = `(00)${r.sscc}`;
-
-    const div = document.createElement("div");
-    div.className = "barcode-block";
-
-    div.innerHTML = `
-      <svg id="gs1-${i}"></svg>
-      <svg id="sscc-${i}"></svg>
-    `;
-
-    preview.appendChild(div);
-
-    JsBarcode(`#gs1-${i}`, gs1, {
-      format: "CODE128",
-      width: 2,
-      height: 80,
-      displayValue: true
-    });
-
-    JsBarcode(`#sscc-${i}`, ssccText, {
-      format: "CODE128",
-      width: 2,
-      height: 80,
-      displayValue: true
-    });
+  JsBarcode("#itemBarcode", itemGS1, {
+    format: "CODE128",
+    width: 2.8,
+    height: 120,
+    displayValue: true,
+    fontSize: 26,
+    textMargin: 8,
+    margin: 0
   });
 
-  const btn = document.getElementById("downloadBtn");
-  btn.disabled = false;
-  btn.classList.add("enabled");
+  JsBarcode("#ssccBarcode", ssccGS1, {
+    format: "CODE128",
+    width: 2.8,
+    height: 120,
+    displayValue: true,
+    fontSize: 26,
+    textMargin: 8,
+    margin: 0
+  });
 }
 </script>
 
