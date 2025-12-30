@@ -3,56 +3,98 @@
 <head>
 <meta charset="UTF-8">
 <title>GS1-128 Barcode Generator</title>
+
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+
 <style>
-body{font-family:Arial;padding:20px}
-label{display:block;margin-top:10px}
-input{width:280px;padding:6px}
-button{margin-top:15px;padding:8px 16px}
-svg{margin-top:20px}
+body { font-family: Arial, sans-serif; padding: 20px; }
+
+/* INPUT UI */
+.controls label { display:block; margin-top:10px; }
+.controls input { width:260px; padding:6px; }
+.controls button { margin-top:15px; padding:8px 16px; }
+
+/* LABEL */
+.label {
+  width: 100mm;
+  border: 1px solid #000;
+  padding: 10mm;
+  margin-top: 20px;
+}
+
+.item-text {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+svg { width: 100%; }
+
+/* PRINT / PDF */
+@media print {
+  .controls { display: none; }
+  body { padding: 0; }
+  .label { border: none; }
+}
 </style>
 </head>
+
 <body>
 
-<h2>GS1-128 Barcode Generator</h2>
+<div class="controls">
+  <h2>GS1-128 Generator</h2>
 
-<label>Item No (GTIN-14)</label>
-<input id="gtin" value="09421908260067">
+  <label>Item No (GTIN-14)</label>
+  <input id="gtin" value="09421908260067">
 
-<label>Use By (DD.MM.YY)</label>
-<input id="expiry" value="01.05.28">
+  <label>Use By (DD.MM.YY)</label>
+  <input id="expiry" value="01.05.28">
 
-<label>Batch / Lot</label>
-<input id="batch" value="055019">
+  <label>Batch / Lot</label>
+  <input id="batch" value="055019">
 
-<label>Quantity</label>
-<input id="qty" value="40">
+  <label>Quantity</label>
+  <input id="qty" value="40">
 
-<label>SSCC</label>
-<input id="sscc" value="012345600000001620">
+  <label>SSCC</label>
+  <input id="sscc" value="012345600000001620">
 
-<br>
-<button onclick="generate()">Generate</button>
+  <br>
+  <button onclick="generate()">Generate</button>
+  <button onclick="window.print()">Download PDF</button>
+</div>
 
-<h3>Product Barcode</h3>
-<svg id="product"></svg>
-
-<h3>SSCC Barcode</h3>
-<svg id="ssccSvg"></svg>
+<!-- LABEL OUTPUT -->
+<div class="label" id="label">
+  <div class="item-text" id="itemText"></div>
+  <svg id="productBarcode"></svg>
+</div>
 
 <script>
-function generate(){
-  product.innerHTML="";
-  ssccSvg.innerHTML="";
+function generate() {
+  productBarcode.innerHTML = "";
 
-  const [dd,mm,yy]=expiry.value.split(".");
-  const exp=yy+mm+dd;
+  const gtin = document.getElementById("gtin").value;
+  const [dd, mm, yy] = document.getElementById("expiry").value.split(".");
+  const expiry = yy + mm + dd;
+  const batch = document.getElementById("batch").value;
+  const qty = document.getElementById("qty").value;
 
-  const productData="(02)"+gtin.value+"(17)"+exp+"(10)"+batch.value+"(37)"+qty.value;
-  const ssccData="(00)"+sscc.value;
+  const gs1 =
+    "(02)" + gtin +
+    "(17)" + expiry +
+    "(10)" + batch +
+    "(37)" + qty;
 
-  JsBarcode("#product",productData,{format:"CODE128",height:80,displayValue:true});
-  JsBarcode("#ssccSvg",ssccData,{format:"CODE128",height:80,displayValue:true});
+  // Item number text (printed on PDF)
+  document.getElementById("itemText").innerText =
+    "Item No: " + gtin;
+
+  JsBarcode("#productBarcode", gs1, {
+    format: "CODE128",
+    height: 70,
+    displayValue: true,
+    fontSize: 14
+  });
 }
 </script>
 
