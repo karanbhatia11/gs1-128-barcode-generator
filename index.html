@@ -28,7 +28,7 @@ body {
 
 /* LEFT PANEL */
 .controls {
-  width: 320px;
+  width: 340px;
   padding: 20px;
   border-right: 1px solid #ddd;
 }
@@ -37,20 +37,11 @@ body {
   margin-top: 0;
 }
 
-.controls label {
-  display: block;
-  margin-top: 10px;
-}
-
-.controls input,
-.controls button {
+.controls button,
+.controls input {
   width: 100%;
-  margin-top: 6px;
+  margin-top: 8px;
   padding: 6px;
-}
-
-.controls button {
-  cursor: pointer;
 }
 
 .controls button:disabled {
@@ -58,10 +49,22 @@ body {
   cursor: not-allowed;
 }
 
-/* RIGHT PANEL (EMPTY ON PURPOSE) */
+/* MODE TOGGLE */
+.mode-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mode-toggle button {
+  flex: 1;
+}
+
+/* RIGHT PANEL (PREVIEW) */
 .preview {
   flex: 1;
   background: #fafafa;
+  overflow: auto;
 }
 
 /* PRINT */
@@ -69,7 +72,7 @@ body {
   .app { display: none; }
 }
 
-/* ===== HIDDEN PDF OUTPUT ===== */
+/* ===== PREVIEW / PDF PAGES ===== */
 .page {
   width: 100vw;
   height: 100vh;
@@ -81,8 +84,10 @@ body {
 
 .canvas {
   width: 88%;
+  background: #fff;
 }
 
+/* HEADER */
 .header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -93,6 +98,7 @@ body {
   height: 32px;
 }
 
+/* META */
 .meta {
   margin-bottom: 12mm;
 }
@@ -103,6 +109,7 @@ body {
   margin-bottom: 3mm;
 }
 
+/* BARCODE */
 .barcode-section {
   margin-bottom: 14mm;
 }
@@ -121,59 +128,75 @@ svg {
 
 <body>
 
-<!-- APP UI -->
 <div class="app">
 
+  <!-- CONTROLS -->
   <div class="controls">
     <h2>GS1-128 Barcode PDF Generator</h2>
 
-    <h3>Manual Entry</h3>
+    <!-- MODE SELECT -->
+    <div class="mode-toggle">
+      <button onclick="setMode('manual')">Manual Entry</button>
+      <button onclick="setMode('excel')">Upload Excel</button>
+    </div>
 
-    <label>Item Number</label>
-    <input id="m_gtin" value="09421908260067">
+    <!-- MANUAL MODE -->
+    <div id="manualPanel">
+      <label>Item Number</label>
+      <input id="m_gtin" value="09421908260067">
 
-    <label>Use By (DD.MM.YY)</label>
-    <input id="m_expiry" value="01.05.28">
+      <label>Use By (DD.MM.YY)</label>
+      <input id="m_expiry" value="01.05.28">
 
-    <label>Batch</label>
-    <input id="m_batch" value="055019">
+      <label>Batch</label>
+      <input id="m_batch" value="055019">
 
-    <label>Quantity</label>
-    <input id="m_qty" value="40">
+      <label>Quantity</label>
+      <input id="m_qty" value="40">
 
-    <label>SSCC</label>
-    <input id="m_sscc" value="012345600000001620">
+      <label>SSCC</label>
+      <input id="m_sscc" value="012345600000001620">
 
-    <button onclick="generateManual()">Generate (Manual)</button>
+      <button onclick="generateManual()">Generate</button>
+    </div>
 
-    <h3>Upload Excel</h3>
+    <!-- EXCEL MODE -->
+    <div id="excelPanel" style="display:none;">
+      <input type="file" id="excelFile" accept=".xlsx">
+      <button onclick="generateFromExcel()">Generate</button>
+    </div>
 
-    <input type="file" id="excelFile" accept=".xlsx">
-    <button onclick="generateFromExcel()">Generate from Excel</button>
-
-    <br><br>
+    <br>
     <button id="downloadBtn" onclick="window.print()" disabled>
       Download PDF
     </button>
   </div>
 
-  <div class="preview"></div>
+  <!-- PREVIEW -->
+  <div class="preview" id="preview"></div>
+
 </div>
 
-<!-- HIDDEN PDF CONTENT -->
-<div id="output" style="display:none;"></div>
-
 <script>
+let currentMode = "manual";
+const preview = document.getElementById("preview");
 const downloadBtn = document.getElementById("downloadBtn");
 
-function clearOutput() {
-  document.getElementById("output").innerHTML = "";
+function setMode(mode) {
+  currentMode = mode;
+  manualPanel.style.display = mode === "manual" ? "block" : "none";
+  excelPanel.style.display = mode === "excel" ? "block" : "none";
+  clearPreview();
+}
+
+function clearPreview() {
+  preview.innerHTML = "";
   downloadBtn.disabled = true;
 }
 
 /* ===== MANUAL ===== */
 function generateManual() {
-  clearOutput();
+  clearPreview();
 
   createPage({
     ItemNumber: m_gtin.value,
@@ -190,11 +213,11 @@ function generateManual() {
 function generateFromExcel() {
   const file = excelFile.files[0];
   if (!file) {
-    alert("Please upload an Excel file first");
+    alert("Please upload an Excel file");
     return;
   }
 
-  clearOutput();
+  clearPreview();
 
   const reader = new FileReader();
   reader.onload = e => {
@@ -202,7 +225,7 @@ function generateFromExcel() {
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
-    if (rows.length === 0) {
+    if (!rows.length) {
       alert("Excel file is empty");
       return;
     }
@@ -221,7 +244,6 @@ function createPage(row) {
 
   page.innerHTML = `
     <div class="canvas">
-
       <div class="header">
         <div></div>
         <img src="logo.svg">
@@ -242,11 +264,10 @@ function createPage(row) {
         <div class="barcode-title">BARCODE 2</div>
         <svg></svg>
       </div>
-
     </div>
   `;
 
-  output.appendChild(page);
+  preview.appendChild(page);
 
   const svgs = page.querySelectorAll("svg");
   const [dd, mm, yy] = row.Expiry.split(".");
