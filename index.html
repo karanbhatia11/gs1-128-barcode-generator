@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title></title>
+<title></title> <!-- empty to avoid print title -->
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
 <style>
-/* ===== PRINT ===== */
+/* ===== PRINT SETUP ===== */
 @page {
   size: A4 landscape;
   margin: 0;
@@ -20,7 +20,7 @@ body {
   color: #111;
 }
 
-/* ===== TOOL UI ===== */
+/* ===== INPUT UI (HIDDEN IN PDF) ===== */
 .controls {
   padding: 20px;
 }
@@ -41,49 +41,48 @@ body {
   align-items: center;
 }
 
-/* ===== CANVAS ===== */
+/* ===== CONTENT ===== */
 .canvas {
-  width: 88%;
+  width: 80%;
+  text-align: center;
 }
 
-/* ===== HEADER ===== */
+/* ===== LOGO ===== */
 .header {
   display: flex;
-  justify-content: flex-end; /* logo top-right */
-  margin-bottom: 6mm;
+  justify-content: center;
+  margin-bottom: 12mm;
 }
 
 .header img {
-  height: 28px; /* slightly smaller to avoid overflow */
+  height: 34px;
 }
 
-/* ===== META ===== */
+/* ===== META TEXT ===== */
 .meta {
-  text-align: center;
-  margin-bottom: 10mm;
+  margin-bottom: 16mm;
 }
 
 .meta div {
-  font-size: 18px; /* reduced */
+  font-size: 20px;
   font-weight: 700;
-  margin-bottom: 3mm;
+  margin-bottom: 5mm;
 }
 
-/* ===== BARCODES ===== */
+/* ===== BARCODE AREA ===== */
 .barcodes {
   display: flex;
   justify-content: space-between;
-  gap: 18mm;
+  gap: 20mm;
 }
 
 .barcode-block {
   width: 48%;
-  text-align: center;
 }
 
 .barcode-title {
-  margin-top: 4mm;
-  font-size: 16px;
+  margin-top: 6mm;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -95,7 +94,7 @@ svg {
 
 <body>
 
-<!-- ===== TOOL ===== -->
+<!-- UI CONTROLS -->
 <div class="controls">
   <h2>GS1-128 Barcode Generator</h2>
 
@@ -119,11 +118,11 @@ svg {
   <button onclick="window.print()">Download PDF</button>
 </div>
 
-<!-- ===== PDF ===== -->
+<!-- PDF PAGE -->
 <div class="page">
   <div class="canvas">
 
-    <!-- LOGO (TOP RIGHT) -->
+    <!-- LOGO -->
     <div class="header">
       <img src="logo.svg" alt="Skutopia Logo">
     </div>
@@ -176,24 +175,23 @@ function generate() {
   itemText.innerText = "ITEM NUMBER: " + gtin;
   ssccText.innerText = "SSCC: " + sscc;
 
-  // Slightly reduced to guarantee single page
   JsBarcode("#itemBarcode", itemGS1, {
     format: "CODE128",
-    width: 2.8,
-    height: 125,
+    width: 3.2,
+    height: 150,
     displayValue: true,
-    fontSize: 26,
-    textMargin: 8,
+    fontSize: 30,
+    textMargin: 10,
     margin: 0
   });
 
   JsBarcode("#ssccBarcode", ssccGS1, {
     format: "CODE128",
-    width: 2.8,
-    height: 125,
+    width: 3.2,
+    height: 150,
     displayValue: true,
-    fontSize: 26,
-    textMargin: 8,
+    fontSize: 30,
+    textMargin: 10,
     margin: 0
   });
 }
