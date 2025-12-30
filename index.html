@@ -1,312 +1,201 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>GS1-128 Barcode PDF Generator</title>
+  <meta charset="UTF-8" />
+  <title>GS1-128 Barcode PDF Generator</title>
 
-<!-- Libraries -->
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-<style>
-@page {
-  size: A4 landscape;
-  margin: 0;
-}
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+      margin: 0;
+      padding: 20px;
+    }
 
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f6f6f6;
-}
+    .logo {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
 
-/* ===== APP LAYOUT ===== */
-.app {
-  display: flex;
-  height: 100vh;
-}
+    .logo span {
+      border-bottom: 4px solid #ff4fd8;
+      padding-bottom: 4px;
+    }
 
-/* ===== LEFT TOOL ===== */
-.controls {
-  width: 340px;
-  padding: 20px;
-  background: #ffffff;
-  border-right: 1px solid #ddd;
-}
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
 
-.logo {
-  text-align: center;
-  margin-bottom: 20px;
-}
-.logo img {
-  height: 32px;
-}
+    .toggle {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
 
-.controls h2 {
-  margin-top: 0;
-}
+    button {
+      padding: 10px 16px;
+      cursor: pointer;
+    }
 
-.mode-toggle {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.mode-toggle button {
-  flex: 1;
-  padding: 8px;
-}
-.mode-toggle button.active {
-  background: #111;
-  color: #fff;
-}
+    .panel {
+      display: none;
+      margin-bottom: 20px;
+    }
 
-.controls label {
-  display: block;
-  margin-top: 10px;
-  font-weight: bold;
-}
+    .panel.active {
+      display: block;
+    }
 
-.controls input,
-.controls button {
-  width: 100%;
-  padding: 8px;
-  margin-top: 6px;
-}
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
 
-.controls button {
-  cursor: pointer;
-}
+    .preview {
+      margin-top: 30px;
+      text-align: center;
+    }
 
-.controls button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+    .barcode-block {
+      margin: 30px 0;
+    }
 
-/* ===== RIGHT PREVIEW ===== */
-.preview {
-  flex: 1;
-  overflow: auto;
-  background: #fafafa;
-  padding: 20px;
-}
+    .download {
+      margin-top: 20px;
+      opacity: 0.4;
+    }
 
-/* ===== PRINT ===== */
-@media print {
-  body { background: #fff; }
-  .controls { display: none; }
-  .preview { padding: 0; }
-}
-
-/* ===== PDF PAGE ===== */
-.page {
-  width: 100vw;
-  height: 100vh;
-  page-break-after: always;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #fff;
-}
-
-.canvas {
-  width: 88%;
-}
-
-/* HEADER */
-.header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  margin-bottom: 10mm;
-}
-.header img {
-  height: 32px;
-}
-
-/* META */
-.meta {
-  margin-bottom: 12mm;
-}
-.meta div {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 3mm;
-}
-
-/* BARCODE */
-.barcode-section {
-  margin-bottom: 14mm;
-}
-.barcode-title {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 4mm;
-}
-svg {
-  width: 100%;
-}
-</style>
+    .download.enabled {
+      opacity: 1;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="app">
+<div class="container">
 
-  <!-- LEFT TOOL -->
-  <div class="controls">
-    <div class="logo">
-      <img src="logo.svg" alt="Company Logo">
-    </div>
+  <div class="logo"><span>SKUTOPIA</span></div>
 
-    <h2>GS1-128 Barcode PDF Generator</h2>
+  <h2>GS1-128 Barcode PDF Generator</h2>
 
-    <div class="mode-toggle">
-      <button id="manualBtn" class="active" onclick="setMode('manual')">Manual Entry</button>
-      <button id="excelBtn" onclick="setMode('excel')">Upload Excel</button>
-    </div>
-
-    <!-- MANUAL -->
-    <div id="manualPanel">
-      <label>Item Number</label>
-      <input id="m_gtin" value="09421908260067">
-
-      <label>Use By (DD.MM.YY)</label>
-      <input id="m_expiry" value="01.05.28">
-
-      <label>Batch</label>
-      <input id="m_batch" value="055019">
-
-      <label>Quantity</label>
-      <input id="m_qty" value="40">
-
-      <label>SSCC</label>
-      <input id="m_sscc" value="012345600000001620">
-
-      <button onclick="generateManual()">Generate</button>
-    </div>
-
-    <!-- EXCEL -->
-    <div id="excelPanel" style="display:none;">
-      <input type="file" id="excelFile" accept=".xlsx">
-      <button onclick="generateFromExcel()">Generate</button>
-    </div>
-
-    <br>
-    <button id="downloadBtn" onclick="window.print()" disabled>
-      Download PDF
-    </button>
+  <div class="toggle">
+    <button onclick="showPanel('manual')">Manual Entry</button>
+    <button onclick="showPanel('excel')">Upload Excel</button>
   </div>
 
-  <!-- RIGHT PREVIEW -->
-  <div class="preview" id="preview">
-    <p style="color:#777">Generated barcodes will appear here…</p>
+  <!-- MANUAL -->
+  <div id="manual" class="panel active">
+    <input id="itemNumber" placeholder="Item Number">
+    <input id="useBy" placeholder="Use By (DD.MM.YY)">
+    <input id="batch" placeholder="Batch">
+    <input id="quantity" placeholder="Quantity">
+    <input id="sscc" placeholder="SSCC">
+    <button onclick="generateManual()">Generate</button>
   </div>
+
+  <!-- EXCEL -->
+  <div id="excel" class="panel">
+    <input type="file" id="excelFile" accept=".xlsx">
+    <button onclick="generateFromExcel()">Generate</button>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview" id="preview"></div>
+
+  <button id="downloadBtn" class="download" disabled onclick="downloadPDF()">Download PDF</button>
 
 </div>
 
 <script>
-const preview = document.getElementById("preview");
-const downloadBtn = document.getElementById("downloadBtn");
+  const { jsPDF } = window.jspdf;
+  let records = [];
 
-function setMode(mode) {
-  manualPanel.style.display = mode === "manual" ? "block" : "none";
-  excelPanel.style.display = mode === "excel" ? "block" : "none";
+  function showPanel(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
 
-  manualBtn.classList.toggle("active", mode === "manual");
-  excelBtn.classList.toggle("active", mode === "excel");
+  function generateManual() {
+    records = [{
+      itemNumber: itemNumber.value,
+      useBy: useBy.value,
+      batch: batch.value,
+      quantity: quantity.value,
+      sscc: sscc.value
+    }];
+    renderPreview();
+  }
 
-  clearPreview();
-}
+  function generateFromExcel() {
+    const file = excelFile.files[0];
+    if (!file) return alert("Upload Excel file");
 
-function clearPreview() {
-  preview.innerHTML = "";
-  downloadBtn.disabled = true;
-}
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, { type: "binary" });
+      const sheet = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      records = sheet;
+      renderPreview();
+    };
+    reader.readAsBinaryString(file);
+  }
 
-/* ===== MANUAL ===== */
-function generateManual() {
-  clearPreview();
+  function renderPreview() {
+    const preview = document.getElementById("preview");
+    preview.innerHTML = "";
 
-  createPage({
-    ItemNumber: m_gtin.value,
-    Expiry: m_expiry.value,
-    Batch: m_batch.value,
-    Quantity: m_qty.value,
-    SSCC: m_sscc.value
-  });
+    records.forEach((r, i) => {
+      const gs1 = `(02)${r.itemNumber}(17)${r.useBy.replaceAll('.', '')}(10)${r.batch}(37)${r.quantity}`;
+      const ssccText = `(00)${r.sscc}`;
 
-  downloadBtn.disabled = false;
-}
+      const div = document.createElement("div");
+      div.className = "barcode-block";
 
-/* ===== EXCEL ===== */
-function generateFromExcel() {
-  const file = excelFile.files[0];
-  if (!file) return alert("Upload Excel file first");
+      div.innerHTML = `
+        <svg id="gs1-${i}"></svg>
+        <svg id="sscc-${i}"></svg>
+      `;
+      preview.appendChild(div);
 
-  clearPreview();
+      JsBarcode(`#gs1-${i}`, gs1, { format: "CODE128", width: 2, height: 80 });
+      JsBarcode(`#sscc-${i}`, ssccText, { format: "CODE128", width: 2, height: 80 });
+    });
 
-  const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result, { type: "binary" });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet);
+    document.getElementById("downloadBtn").disabled = false;
+    document.getElementById("downloadBtn").classList.add("enabled");
+  }
 
-    if (!rows.length) return alert("Excel file is empty");
+  function downloadPDF() {
+    const pdf = new jsPDF("landscape", "pt", "a4");
 
-    rows.forEach(createPage);
-    downloadBtn.disabled = false;
-  };
-  reader.readAsBinaryString(file);
-}
+    records.forEach((r, i) => {
+      if (i > 0) pdf.addPage();
 
-/* ===== PAGE BUILDER ===== */
-function createPage(row) {
-  const page = document.createElement("div");
-  page.className = "page";
+      pdf.setFontSize(12);
+      pdf.text(`ITEM NUMBER: ${r.itemNumber}`, 40, 50);
+      pdf.text(`SSCC: ${r.sscc}`, 40, 70);
 
-  page.innerHTML = `
-    <div class="canvas">
-      <div class="header">
-        <div></div>
-        <img src="logo.svg">
-        <div></div>
-      </div>
+      pdf.setFontSize(20);
+      pdf.text("SKUTOPIA", 420, 50, { align: "center" });
 
-      <div class="meta">
-        <div>ITEM NUMBER: ${row.ItemNumber}</div>
-        <div>SSCC: ${row.SSCC}</div>
-      </div>
+      const gs1 = document.getElementById(`gs1-${i}`).outerHTML;
+      const sscc = document.getElementById(`sscc-${i}`).outerHTML;
 
-      <div class="barcode-section">
-        <div class="barcode-title">BARCODE 1</div>
-        <svg></svg>
-      </div>
+      pdf.svg(gs1, { x: 100, y: 120, width: 600 });
+      pdf.svg(sscc, { x: 220, y: 260, width: 360 });
+    });
 
-      <div class="barcode-section">
-        <div class="barcode-title">BARCODE 2</div>
-        <svg></svg>
-      </div>
-    </div>
-  `;
-
-  preview.appendChild(page);
-
-  const svgs = page.querySelectorAll("svg");
-  const [dd, mm, yy] = row.Expiry.split(".");
-  const expiry = yy + mm + dd;
-
-  JsBarcode(svgs[0],
-    "(02)" + row.ItemNumber +
-    "(17)" + expiry +
-    "(10)" + row.Batch +
-    "(37)" + row.Quantity,
-    { format: "CODE128", width: 2.8, height: 120, displayValue: true, fontSize: 26 }
-  );
-
-  JsBarcode(svgs[1],
-    "(00)" + row.SSCC,
-    { format: "CODE128", width: 2.8, height: 120, displayValue: true, fontSize: 26 }
-  );
-}
+    pdf.save("gs1-barcodes.pdf");
+  }
 </script>
 
 </body>
