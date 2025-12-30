@@ -7,18 +7,23 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
 <style>
-/* FORCE A4 LANDSCAPE */
+/* A4 LANDSCAPE */
 @page {
   size: A4 landscape;
   margin: 15mm;
 }
 
 body {
-  font-family: Arial, sans-serif;
   margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: #111;
 }
 
-/* INPUT UI */
+/* UI CONTROLS */
+.controls {
+  padding: 20px;
+}
 .controls label { display:block; margin-top:10px; }
 .controls input { width:260px; padding:6px; }
 .controls button { margin-top:15px; padding:8px 16px; }
@@ -29,21 +34,48 @@ body {
   height: 100%;
 }
 
-/* TOP TEXT */
-.top-row {
+/* HEADER (Skutopia-inspired) */
+.header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  padding-bottom: 8mm;
+  border-bottom: 2px solid #e6e6e6;
   margin-bottom: 10mm;
 }
 
-.value-text {
+.logo {
+  height: 28px;
+}
+
+/* TOP VALUES */
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8mm;
+}
+
+.value-block {
   width: 48%;
+  background: #f8f8f8;
+  padding: 6mm;
   text-align: center;
+  border-radius: 4px;
+}
+
+.value-label {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.value-text {
   font-size: 22px;
   font-weight: bold;
 }
 
-/* BARCODE ROW */
+/* BARCODE AREA */
 .barcode-row {
   display: flex;
   justify-content: space-between;
@@ -58,7 +90,7 @@ svg {
   width: 100%;
 }
 
-/* PRINT CLEANUP */
+/* PRINT CLEAN */
 @media print {
   .controls { display: none; }
 }
@@ -92,10 +124,26 @@ svg {
 
 <div class="page">
 
-  <!-- TOP TEXT -->
+  <!-- HEADER -->
+  <div class="header">
+    <img
+      class="logo"
+      src="https://skutopia.com/wp-content/themes/skutopia/assets/images/logo.svg"
+      alt="Skutopia Logo"
+    />
+  </div>
+
+  <!-- VALUES -->
   <div class="top-row">
-    <div class="value-text" id="itemText"></div>
-    <div class="value-text" id="ssccText"></div>
+    <div class="value-block">
+      <div class="value-label">ITEM NUMBER</div>
+      <div class="value-text" id="itemText"></div>
+    </div>
+
+    <div class="value-block">
+      <div class="value-label">SSCC</div>
+      <div class="value-text" id="ssccText"></div>
+    </div>
   </div>
 
   <!-- BARCODES -->
@@ -132,22 +180,19 @@ function generate() {
   const ssccGS1 =
     "(00)" + sscc;
 
-  // Top text
-  itemText.innerText = "Item No: " + gtin;
-  ssccText.innerText = "SSCC: " + sscc;
+  itemText.innerText = gtin;
+  ssccText.innerText = sscc;
 
-  // LARGE ITEM BARCODE (dense GS1)
   JsBarcode("#itemBarcode", itemGS1, {
     format: "CODE128",
-    width: 3.2,        // ⬅️ thick bars = fills page
+    width: 3.2,
     height: 140,
     displayValue: true,
-    fontSize: 30,      // ⬅️ very clear numbers
+    fontSize: 30,
     textMargin: 10,
     margin: 0
   });
 
-  // LARGE SSCC BARCODE
   JsBarcode("#ssccBarcode", ssccGS1, {
     format: "CODE128",
     width: 3.2,
