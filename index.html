@@ -170,6 +170,7 @@ function generate() {
   const qty = document.getElementById("qty").value;
   const sscc = document.getElementById("sscc").value;
 
+  /* 
   const itemGS1 =
     "(02)" + gtin +
     "(17)" + expiry +
@@ -177,12 +178,31 @@ function generate() {
     "(37)" + qty;
 
   const ssccGS1 =
-    "(00)" + sscc;
+    "(00)" + sscc; 
+  */
+
+  // MACHINE-READABLE (scanner output)
+  const itemGS1Encoded =
+    "02" + gtin +
+    "\\F17" + expiry +
+    "\\F10" + batch +
+    "\\F37" + qty;
+  
+  // HUMAN-READABLE (printed under barcode)
+  const itemGS1Text =
+    "(02)" + gtin +
+    "(17)" + expiry +
+    "(10)" + batch +
+    "(37)" + qty;
+  
+  // SSCC (fixed length, no FNC1 needed)
+  const ssccGS1Encoded = "00" + sscc;
+  const ssccGS1Text = "(00)" + sscc;
 
   itemText.innerText = "ITEM NUMBER: " + gtin;
   ssccText.innerText = "SSCC: " + sscc;
 
-  JsBarcode("#itemBarcode", itemGS1, {
+  /*JsBarcode("#itemBarcode", itemGS1, {
     format: "CODE128",
     width: 1.5,
     height: 120,
@@ -190,9 +210,20 @@ function generate() {
     fontSize: 26,
     textMargin: 8,
     margin: 0
+  }); */
+
+  JsBarcode("#itemBarcode", itemGS1Encoded, {
+    format: "CODE128",
+    displayValue: true,
+    text: itemGS1Text,   // 👈 key change
+    width: 1.5,
+    height: 120,
+    fontSize: 26,
+    textMargin: 8,
+    margin: 0
   });
 
-  JsBarcode("#ssccBarcode", ssccGS1, {
+  /*JsBarcode("#ssccBarcode", ssccGS1, {
     format: "CODE128",
     width: 2.8,
     height: 120,
@@ -200,7 +231,19 @@ function generate() {
     fontSize: 26,
     textMargin: 8,
     margin: 0
+  });*/
+
+  JsBarcode("#ssccBarcode", ssccGS1Encoded, {
+    format: "CODE128",
+    displayValue: true,
+    text: ssccGS1Text,
+    width: 2.8,
+    height: 120,
+    fontSize: 26,
+    textMargin: 8,
+    margin: 0
   });
+
 }
 </script>
 
