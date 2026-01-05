@@ -98,8 +98,17 @@ svg {
 <div id="pages"></div>
 
 <script>
+function safeGet(row, keys) {
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== null && row[k] !== "") {
+      return row[k];
+    }
+  }
+  return "";
+}
+
 function normaliseExpiry(value) {
-  if (!value) return "";
+  if (!value) return null;
 
   if (value instanceof Date) {
     const dd = String(value.getDate()).padStart(2, "0");
@@ -112,6 +121,23 @@ function normaliseExpiry(value) {
 }
 
 function generatePage(data) {
+  const expiryStr = normaliseExpiry(data.expiry);
+  if (!expiryStr || !expiryStr.includes(".")) {
+    console.warn("Skipping row due to invalid expiry:", data);
+    return null;
+  }
+
+  const parts = expiryStr.split(".");
+  if (parts.length !== 3) {
+    console.warn("Skipping row due to malformed expiry:", data);
+    return null;
+  }
+
+  const [dd, mm, yy] = parts;
+  const expiry = yy + mm + dd;
+
+  const GS = String.fromCharCode(29);
+
   const page = document.createElement("div");
   page.className = "page";
 
@@ -144,12 +170,6 @@ function generatePage(data) {
   const ssccText = page.querySelector(".ssccText");
   const itemBarcode = page.querySelector(".itemBarcode");
   const ssccBarcode = page.querySelector(".ssccBarcode");
-
-  const expiryStr = normaliseExpiry(data.expiry);
-  const [dd, mm, yy] = expiryStr.split(".");
-  const expiry = yy + mm + dd;
-
-  const GS = String.fromCharCode(29);
 
   const itemGS1Encoded =
     "02" + data.gtin +
@@ -205,24 +225,42 @@ function generateFromExcel() {
   reader.onload = e => {
     const workbook = XLSX.read(e.target.result, { type: "binary", cellDates: true });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet);
+    const rawRows = XLSX.utils.sheet_to_json(sheet);
 
-    if (!rows.length) {
+    if (!rawRows.length) {
       alert("Excel file is empty");
       return;
     }
 
+    const rows = rawRows.map(r => ({
+      gtin: safeGet(r, ["gtin", "GTIN"]),
+      expiry: safeGet(r, ["expiry", "Expiry", "expiry_dd_mm_yy"]),
+      batch: safeGet(r, ["batch", "Batch"]),
+      quantity: safeGet(r, ["quantity", "Quantity"]),
+      sscc: safeGet(r, ["sscc", "SSCC"])
+    }));
+
     const container = document.getElementById("pages");
     container.innerHTML = "";
 
+    let rendered = 0;
     rows.forEach(row => {
-      container.appendChild(generatePage(row));
+      const page = generatePage(row);
+      if (page) {
+        container.appendChild(page);
+        rendered++;
+      }
     });
+
+    if (rendered === 0) {
+      alert("No valid rows found. Check Excel format.");
+    }
   };
 
   reader.readAsBinaryString(fileInput.files[0]);
 }
 </script>
+
 
 
 </body>
