@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GS1-128 Bulk Generator</title>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+
+<style>
+/* ===== PRINT ===== */
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: #111;
+}
+
+/* ===== TOOL UI ===== */
+.controls {
+  padding: 20px;
+}
+.controls button {
+  padding: 8px 16px;
+  margin-right: 10px;
+}
+
+@media print {
+  .controls { display: none; }
+}
+
+/* ===== PAGE ===== */
+.page {
+  width: 100vw;
+  height: 100vh;
+  page-break-after: always;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ===== CANVAS ===== */
+.canvas {
+  width: 88%;
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 10mm;
+}
+
+.header .spacer {
+  height: 1px;
+}
+
+.header img {
+  height: 32px;
+}
+
+/* ===== META ===== */
+.meta {
+  margin-bottom: 12mm;
+}
+
+.meta div {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 3mm;
+}
+
+/* ===== BARCODES ===== */
+.barcode-section {
+  margin-bottom: 16mm;
+}
+
+.barcode-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4mm;
+}
+
+svg {
+  width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== TOOL ===== -->
+<div class="controls">
+  <h2>GS1-128 Bulk Generator (Demo)</h2>
+  <button onclick="generateBulk()">Generate 10 Labels</button>
+  <button onclick="window.print()">Download PDF</button>
+</div>
+
+<!-- ===== OUTPUT ===== -->
+<div id="pages"></div>
+
+<script>
+/* ===== SAMPLE DATA (10 ROWS) ===== */
+const rows = Array.from({ length: 10 }, (_, i) => ({
+  gtin: "09421908260067",
+  expiry: "01.05.28",
+  batch: "05501" + i,
+  qty: 40 + i,
+  sscc: "01234560000000162" + i
+}));
+
+/* ===== GENERATE ONE PAGE ===== */
+function generatePage(data) {
+  const page = document.createElement("div");
+  page.className = "page";
+
+  page.innerHTML = `
+    <div class="canvas">
+      <div class="header">
+        <div class="spacer"></div>
+        <img src="logo.svg" alt="Skutopia Logo">
+        <div class="spacer"></div>
+      </div>
+
+      <div class="meta">
+        <div class="itemText"></div>
+        <div class="ssccText"></div>
+      </div>
+
+      <div class="barcode-section">
+        <div class="barcode-title">BARCODE 1</div>
+        <svg class="itemBarcode"></svg>
+      </div>
+
+      <div class="barcode-section">
+        <div class="barcode-title">BARCODE 2</div>
+        <svg class="ssccBarcode"></svg>
+      </div>
+    </div>
+  `;
+
+  const itemText = page.querySelector(".itemText");
+  const ssccText = page.querySelector(".ssccText");
+  const itemBarcode = page.querySelector(".itemBarcode");
+  const ssccBarcode = page.querySelector(".ssccBarcode");
+
+  const [dd, mm, yy] = data.expiry.split(".");
+  const expiry = yy + mm + dd;
+  const GS = String.fromCharCode(29);
+
+  const itemGS1Encoded =
+    "02" + data.gtin +
+    GS + "17" + expiry +
+    GS + "10" + data.batch +
+    GS + "37" + data.qty;
+
+  const itemGS1Text =
+    "(02)" + data.gtin +
+    "(17)" + expiry +
+    "(10)" + data.batch +
+    "(37)" + data.qty;
+
+  const ssccGS1Encoded = "00" + data.sscc;
+  const ssccGS1Text = "(00)" + data.sscc;
+
+  itemText.innerText = "ITEM NUMBER: " + data.gtin;
+  ssccText.innerText = "SSCC: " + data.sscc;
+
+  JsBarcode(itemBarcode, itemGS1Encoded, {
+    format: "CODE128",
+    displayValue: true,
+    text: itemGS1Text,
+    width: 2.4,
+    height: 125,
+    fontSize: 26,
+    textMargin: 8,
+    margin: 0
+  });
+
+  JsBarcode(ssccBarcode, ssccGS1Encoded, {
+    format: "CODE128",
+    displayValue: true,
+    text: ssccGS1Text,
+    width: 2.8,
+    height: 125,
+    fontSize: 26,
+    textMargin: 8,
+    margin: 0
+  });
+
+  return page;
+}
+
+/* ===== BULK GENERATION ===== */
+function generateBulk() {
+  const container = document.getElementById("pages");
+  container.innerHTML = "";
+
+  rows.forEach(row => {
+    container.appendChild(generatePage(row));
+  });
+}
+</script>
+
+</body>
+</html>
