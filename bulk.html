@@ -98,6 +98,19 @@ svg {
 <div id="pages"></div>
 
 <script>
+function normaliseExpiry(value) {
+  // If Excel gave us a Date
+  if (value instanceof Date) {
+    const dd = String(value.getDate()).padStart(2, "0");
+    const mm = String(value.getMonth() + 1).padStart(2, "0");
+    const yy = String(value.getFullYear()).slice(-2);
+    return dd + "." + mm + "." + yy;
+  }
+
+  // Otherwise force string
+  return String(value).trim();
+}
+
 function generatePage(data) {
   const page = document.createElement("div");
   page.className = "page";
@@ -132,8 +145,10 @@ function generatePage(data) {
   const itemBarcode = page.querySelector(".itemBarcode");
   const ssccBarcode = page.querySelector(".ssccBarcode");
 
-  const [dd, mm, yy] = data.expiry_dd_mm_yy.split(".");
+  const expiryStr = normaliseExpiry(data.expiry_dd_mm_yy);
+  const [dd, mm, yy] = expiryStr.split(".");
   const expiry = yy + mm + dd;
+
   const GS = String.fromCharCode(29);
 
   const itemGS1Encoded =
@@ -188,7 +203,7 @@ function generateFromExcel() {
 
   const reader = new FileReader();
   reader.onload = e => {
-    const workbook = XLSX.read(e.target.result, { type: "binary" });
+    const workbook = XLSX.read(e.target.result, { type: "binary", cellDates: true });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
@@ -208,6 +223,7 @@ function generateFromExcel() {
   reader.readAsBinaryString(fileInput.files[0]);
 }
 </script>
+
 
 </body>
 </html>
