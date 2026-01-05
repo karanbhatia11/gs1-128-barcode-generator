@@ -99,7 +99,8 @@ svg {
 
 <script>
 function normaliseExpiry(value) {
-  // If Excel gave us a Date
+  if (!value) return "";
+
   if (value instanceof Date) {
     const dd = String(value.getDate()).padStart(2, "0");
     const mm = String(value.getMonth() + 1).padStart(2, "0");
@@ -107,7 +108,6 @@ function normaliseExpiry(value) {
     return dd + "." + mm + "." + yy;
   }
 
-  // Otherwise force string
   return String(value).trim();
 }
 
@@ -145,7 +145,7 @@ function generatePage(data) {
   const itemBarcode = page.querySelector(".itemBarcode");
   const ssccBarcode = page.querySelector(".ssccBarcode");
 
-  const expiryStr = normaliseExpiry(data.expiry_dd_mm_yy);
+  const expiryStr = normaliseExpiry(data.expiry);
   const [dd, mm, yy] = expiryStr.split(".");
   const expiry = yy + mm + dd;
 
