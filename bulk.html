@@ -5,9 +5,9 @@
 <title>GS1-128 Bulk Generator</title>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
 
 <style>
+/* ===== PRINT ===== */
 @page {
   size: A4 landscape;
   margin: 0;
@@ -20,6 +20,7 @@ body {
   color: #111;
 }
 
+/* ===== TOOL UI ===== */
 .controls {
   padding: 20px;
 }
@@ -32,6 +33,7 @@ body {
   .controls { display: none; }
 }
 
+/* ===== PAGE ===== */
 .page {
   width: 100vw;
   height: 100vh;
@@ -41,10 +43,12 @@ body {
   align-items: center;
 }
 
+/* ===== CANVAS ===== */
 .canvas {
   width: 88%;
 }
 
+/* ===== HEADER ===== */
 .header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -60,6 +64,7 @@ body {
   height: 32px;
 }
 
+/* ===== META ===== */
 .meta {
   margin-bottom: 12mm;
 }
@@ -70,6 +75,7 @@ body {
   margin-bottom: 3mm;
 }
 
+/* ===== BARCODES ===== */
 .barcode-section {
   margin-bottom: 16mm;
 }
@@ -88,56 +94,28 @@ svg {
 
 <body>
 
+<!-- ===== TOOL ===== -->
 <div class="controls">
-  <h2>GS1-128 Bulk Generator</h2>
-  <input type="file" id="excelFile" accept=".xlsx">
-  <button onclick="generateFromExcel()">Generate from Excel</button>
+  <h2>GS1-128 Bulk Generator (Demo)</h2>
+  <button onclick="generateBulk()">Generate 10 Labels</button>
   <button onclick="window.print()">Download PDF</button>
 </div>
 
+<!-- ===== OUTPUT ===== -->
 <div id="pages"></div>
 
 <script>
-function safeGet(row, keys) {
-  for (const k of keys) {
-    if (row[k] !== undefined && row[k] !== null && row[k] !== "") {
-      return row[k];
-    }
-  }
-  return "";
-}
+/* ===== SAMPLE DATA (10 ROWS) ===== */
+const rows = Array.from({ length: 10 }, (_, i) => ({
+  gtin: "09421908260067",
+  expiry: "01.05.28",
+  batch: "05501" + i,
+  qty: 40 + i,
+  sscc: "01234560000000162" + i
+}));
 
-function normaliseExpiry(value) {
-  if (!value) return null;
-
-  if (value instanceof Date) {
-    const dd = String(value.getDate()).padStart(2, "0");
-    const mm = String(value.getMonth() + 1).padStart(2, "0");
-    const yy = String(value.getFullYear()).slice(-2);
-    return dd + "." + mm + "." + yy;
-  }
-
-  return String(value).trim();
-}
-
+/* ===== GENERATE ONE PAGE ===== */
 function generatePage(data) {
-  const expiryStr = normaliseExpiry(data.expiry);
-  if (!expiryStr || !expiryStr.includes(".")) {
-    console.warn("Skipping row due to invalid expiry:", data);
-    return null;
-  }
-
-  const parts = expiryStr.split(".");
-  if (parts.length !== 3) {
-    console.warn("Skipping row due to malformed expiry:", data);
-    return null;
-  }
-
-  const [dd, mm, yy] = parts;
-  const expiry = yy + mm + dd;
-
-  const GS = String.fromCharCode(29);
-
   const page = document.createElement("div");
   page.className = "page";
 
@@ -171,17 +149,21 @@ function generatePage(data) {
   const itemBarcode = page.querySelector(".itemBarcode");
   const ssccBarcode = page.querySelector(".ssccBarcode");
 
+  const [dd, mm, yy] = data.expiry.split(".");
+  const expiry = yy + mm + dd;
+  const GS = String.fromCharCode(29);
+
   const itemGS1Encoded =
     "02" + data.gtin +
     GS + "17" + expiry +
     GS + "10" + data.batch +
-    GS + "37" + data.quantity;
+    GS + "37" + data.qty;
 
   const itemGS1Text =
     "(02)" + data.gtin +
     "(17)" + expiry +
     "(10)" + data.batch +
-    "(37)" + data.quantity;
+    "(37)" + data.qty;
 
   const ssccGS1Encoded = "00" + data.sscc;
   const ssccGS1Text = "(00)" + data.sscc;
@@ -214,54 +196,16 @@ function generatePage(data) {
   return page;
 }
 
-function generateFromExcel() {
-  const fileInput = document.getElementById("excelFile");
-  if (!fileInput.files.length) {
-    alert("Please upload an Excel file");
-    return;
-  }
+/* ===== BULK GENERATION ===== */
+function generateBulk() {
+  const container = document.getElementById("pages");
+  container.innerHTML = "";
 
-  const reader = new FileReader();
-  reader.onload = e => {
-    const workbook = XLSX.read(e.target.result, { type: "binary", cellDates: true });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rawRows = XLSX.utils.sheet_to_json(sheet);
-
-    if (!rawRows.length) {
-      alert("Excel file is empty");
-      return;
-    }
-
-    const rows = rawRows.map(r => ({
-      gtin: safeGet(r, ["gtin", "GTIN"]),
-      expiry: safeGet(r, ["expiry", "Expiry", "expiry_dd_mm_yy"]),
-      batch: safeGet(r, ["batch", "Batch"]),
-      quantity: safeGet(r, ["quantity", "Quantity"]),
-      sscc: safeGet(r, ["sscc", "SSCC"])
-    }));
-
-    const container = document.getElementById("pages");
-    container.innerHTML = "";
-
-    let rendered = 0;
-    rows.forEach(row => {
-      const page = generatePage(row);
-      if (page) {
-        container.appendChild(page);
-        rendered++;
-      }
-    });
-
-    if (rendered === 0) {
-      alert("No valid rows found. Check Excel format.");
-    }
-  };
-
-  reader.readAsBinaryString(fileInput.files[0]);
+  rows.forEach(row => {
+    container.appendChild(generatePage(row));
+  });
 }
 </script>
-
-
 
 </body>
 </html>
