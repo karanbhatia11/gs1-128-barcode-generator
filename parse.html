@@ -1,47 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>GS1 Excel Parser (Debug)</title>
+<title>GS1 Excel Parser</title>
 
-<!-- SheetJS (Cloudflare CDN – GitHub Pages safe) -->
+<!-- SheetJS (GitHub Pages safe CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 body {
-  font-family: Arial, sans-serif;
-  padding: 30px;
+  font-family: Arial, Helvetica, sans-serif;
   background: #f7f7f7;
+  margin: 0;
+  padding: 30px;
 }
-.box {
-  background: white;
-  padding: 20px;
-  max-width: 800px;
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: #ffffff;
+  padding: 25px;
   border-radius: 6px;
 }
+
+h2 {
+  margin-top: 0;
+}
+
+button {
+  padding: 8px 16px;
+  margin-top: 10px;
+}
+
 pre {
+  margin-top: 20px;
   background: #111;
   color: #0f0;
   padding: 15px;
+  max-height: 400px;
   overflow: auto;
+  font-size: 12px;
+}
+
+.status {
+  margin-top: 15px;
+  font-weight: bold;
 }
 </style>
 </head>
 
 <body>
 
-<div class="box">
+<div class="container">
   <h2>GS1 Excel Parser (Debug Page)</h2>
 
   <input type="file" id="excelFile" accept=".xlsx">
   <br><br>
 
-  <button onclick="parseExcel()">Parse Excel</button>
+  <button onclick="parseExcel()">Parse Excel & Continue</button>
 
-  <h3>Status</h3>
-  <div id="status">Waiting…</div>
+  <div class="status" id="status">Waiting for file…</div>
 
-  <h3>Parsed Output</h3>
   <pre id="output"></pre>
 </div>
 
@@ -51,8 +70,11 @@ function parseExcel() {
   const status = document.getElementById("status");
   const output = document.getElementById("output");
 
+  status.textContent = "";
+  output.textContent = "";
+
   if (!fileInput.files.length) {
-    status.innerText = "❌ No file selected";
+    status.textContent = "❌ No file selected";
     return;
   }
 
@@ -65,15 +87,31 @@ function parseExcel() {
         cellDates: true
       });
 
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet);
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
 
-      status.innerText = `✅ Parsed ${rows.length} rows`;
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+      if (!rows.length) {
+        status.textContent = "❌ Excel file is empty";
+        return;
+      }
+
+      // Persist rows for bulk.html
+      sessionStorage.setItem("gs1Rows", JSON.stringify(rows));
+
+      status.textContent = `✅ Parsed ${rows.length} rows successfully`;
       output.textContent = JSON.stringify(rows, null, 2);
 
+      // Redirect to bulk generator
+      setTimeout(() => {
+        window.location.href = "bulk.html";
+      }, 500);
+
     } catch (err) {
-      status.innerText = "❌ Error parsing Excel";
+      status.textContent = "❌ Error parsing Excel";
       output.textContent = err.message;
+      console.error(err);
     }
   };
 
