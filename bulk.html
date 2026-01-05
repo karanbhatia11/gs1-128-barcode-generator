@@ -5,9 +5,9 @@
 <title>GS1-128 Bulk Generator</title>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
 
 <style>
-/* ===== PRINT ===== */
 @page {
   size: A4 landscape;
   margin: 0;
@@ -20,7 +20,6 @@ body {
   color: #111;
 }
 
-/* ===== TOOL UI ===== */
 .controls {
   padding: 20px;
 }
@@ -33,7 +32,6 @@ body {
   .controls { display: none; }
 }
 
-/* ===== PAGE ===== */
 .page {
   width: 100vw;
   height: 100vh;
@@ -43,12 +41,10 @@ body {
   align-items: center;
 }
 
-/* ===== CANVAS ===== */
 .canvas {
   width: 88%;
 }
 
-/* ===== HEADER ===== */
 .header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -64,7 +60,6 @@ body {
   height: 32px;
 }
 
-/* ===== META ===== */
 .meta {
   margin-bottom: 12mm;
 }
@@ -75,7 +70,6 @@ body {
   margin-bottom: 3mm;
 }
 
-/* ===== BARCODES ===== */
 .barcode-section {
   margin-bottom: 16mm;
 }
@@ -94,27 +88,16 @@ svg {
 
 <body>
 
-<!-- ===== TOOL ===== -->
 <div class="controls">
-  <h2>GS1-128 Bulk Generator (Demo)</h2>
-  <button onclick="generateBulk()">Generate 10 Labels</button>
+  <h2>GS1-128 Bulk Generator</h2>
+  <input type="file" id="excelFile" accept=".xlsx">
+  <button onclick="generateFromExcel()">Generate from Excel</button>
   <button onclick="window.print()">Download PDF</button>
 </div>
 
-<!-- ===== OUTPUT ===== -->
 <div id="pages"></div>
 
 <script>
-/* ===== SAMPLE DATA (10 ROWS) ===== */
-const rows = Array.from({ length: 10 }, (_, i) => ({
-  gtin: "09421908260067",
-  expiry: "01.05.28",
-  batch: "05501" + i,
-  qty: 40 + i,
-  sscc: "01234560000000162" + i
-}));
-
-/* ===== GENERATE ONE PAGE ===== */
 function generatePage(data) {
   const page = document.createElement("div");
   page.className = "page";
@@ -149,7 +132,7 @@ function generatePage(data) {
   const itemBarcode = page.querySelector(".itemBarcode");
   const ssccBarcode = page.querySelector(".ssccBarcode");
 
-  const [dd, mm, yy] = data.expiry.split(".");
+  const [dd, mm, yy] = data.expiry_dd_mm_yy.split(".");
   const expiry = yy + mm + dd;
   const GS = String.fromCharCode(29);
 
@@ -157,13 +140,13 @@ function generatePage(data) {
     "02" + data.gtin +
     GS + "17" + expiry +
     GS + "10" + data.batch +
-    GS + "37" + data.qty;
+    GS + "37" + data.quantity;
 
   const itemGS1Text =
     "(02)" + data.gtin +
     "(17)" + expiry +
     "(10)" + data.batch +
-    "(37)" + data.qty;
+    "(37)" + data.quantity;
 
   const ssccGS1Encoded = "00" + data.sscc;
   const ssccGS1Text = "(00)" + data.sscc;
@@ -196,14 +179,33 @@ function generatePage(data) {
   return page;
 }
 
-/* ===== BULK GENERATION ===== */
-function generateBulk() {
-  const container = document.getElementById("pages");
-  container.innerHTML = "";
+function generateFromExcel() {
+  const fileInput = document.getElementById("excelFile");
+  if (!fileInput.files.length) {
+    alert("Please upload an Excel file");
+    return;
+  }
 
-  rows.forEach(row => {
-    container.appendChild(generatePage(row));
-  });
+  const reader = new FileReader();
+  reader.onload = e => {
+    const workbook = XLSX.read(e.target.result, { type: "binary" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    if (!rows.length) {
+      alert("Excel file is empty");
+      return;
+    }
+
+    const container = document.getElementById("pages");
+    container.innerHTML = "";
+
+    rows.forEach(row => {
+      container.appendChild(generatePage(row));
+    });
+  };
+
+  reader.readAsBinaryString(fileInput.files[0]);
 }
 </script>
 
