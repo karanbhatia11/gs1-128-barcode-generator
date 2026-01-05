@@ -181,12 +181,14 @@ function generate() {
     "(00)" + sscc; 
   */
 
-  // MACHINE-READABLE (scanner output)
+  const GS = String.fromCharCode(29);
+
   const itemGS1Encoded =
     "02" + gtin +
-    "\\F17" + expiry +
-    "\\F10" + batch +
-    "\\F37" + qty;
+    GS + "17" + expiry +
+    GS + "10" + batch +
+    GS + "37" + qty;
+
   
   // HUMAN-READABLE (printed under barcode)
   const itemGS1Text =
