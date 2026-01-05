@@ -94,27 +94,27 @@ svg {
 
 <body>
 
-<!-- ===== TOOL ===== -->
 <div class="controls">
-  <h2>GS1-128 Bulk Generator (Demo)</h2>
-  <button onclick="generateBulk()">Generate 10 Labels</button>
+  <h2>GS1-128 Bulk Generator</h2>
   <button onclick="window.print()">Download PDF</button>
 </div>
 
-<!-- ===== OUTPUT ===== -->
 <div id="pages"></div>
 
 <script>
-/* ===== SAMPLE DATA (10 ROWS) ===== */
-const rows = Array.from({ length: 10 }, (_, i) => ({
-  gtin: "09421908260067",
-  expiry: "01.05.28",
-  batch: "05501" + i,
-  qty: 40 + i,
-  sscc: "01234560000000162" + i
-}));
+function normaliseExpiry(value) {
+  if (!value) return "";
 
-/* ===== GENERATE ONE PAGE ===== */
+  if (value instanceof Date) {
+    const dd = String(value.getDate()).padStart(2, "0");
+    const mm = String(value.getMonth() + 1).padStart(2, "0");
+    const yy = String(value.getFullYear()).slice(-2);
+    return dd + "." + mm + "." + yy;
+  }
+
+  return String(value).trim();
+}
+
 function generatePage(data) {
   const page = document.createElement("div");
   page.className = "page";
@@ -149,21 +149,23 @@ function generatePage(data) {
   const itemBarcode = page.querySelector(".itemBarcode");
   const ssccBarcode = page.querySelector(".ssccBarcode");
 
-  const [dd, mm, yy] = data.expiry.split(".");
+  const expiryStr = normaliseExpiry(data.expiry_dd_mm_yy);
+  const [dd, mm, yy] = expiryStr.split(".");
   const expiry = yy + mm + dd;
+
   const GS = String.fromCharCode(29);
 
   const itemGS1Encoded =
     "02" + data.gtin +
     GS + "17" + expiry +
     GS + "10" + data.batch +
-    GS + "37" + data.qty;
+    GS + "37" + data.quantity;
 
   const itemGS1Text =
     "(02)" + data.gtin +
     "(17)" + expiry +
     "(10)" + data.batch +
-    "(37)" + data.qty;
+    "(37)" + data.quantity;
 
   const ssccGS1Encoded = "00" + data.sscc;
   const ssccGS1Text = "(00)" + data.sscc;
@@ -196,15 +198,22 @@ function generatePage(data) {
   return page;
 }
 
-/* ===== BULK GENERATION ===== */
-function generateBulk() {
+(function initBulk() {
+  const stored = sessionStorage.getItem("gs1Rows");
+
+  if (!stored) {
+    alert("No Excel data found. Please upload Excel first.");
+    return;
+  }
+
+  const rows = JSON.parse(stored);
   const container = document.getElementById("pages");
   container.innerHTML = "";
 
   rows.forEach(row => {
     container.appendChild(generatePage(row));
   });
-}
+})();
 </script>
 
 </body>
